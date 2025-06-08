@@ -1,0 +1,25 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/client"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+
+model Document {
+  id        Int      @id @default(autoincrement())
+  title     String
+  summary   String
+  content   String
+  createdAt DateTime @default(now())
+  tags      Tag[]    // many-to-many relation
+}
+
+model Tag {
+  id        Int        @id @default(autoincrement())
+  name      String     @unique
+  documents Document[] // inverse side of many-to-many
+}
