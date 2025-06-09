@@ -1,46 +1,55 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+import morgan from "morgan";
 import documentRoutes from "./routes/documentRoutes";
-import prisma from './config/database'; // Ensure database connection
+import prisma from './config/database';
 import { FRONTEND_URL } from './config/config';
-
+import { errorHandler } from './utils/errors';
 
 dotenv.config();
 
 const app = express();
-
 const PORT = process.env.PORT || 3001;
-
 
 // Middleware
 app.use(
   cors({
-    origin: FRONTEND_URL, // Allow only your frontend origin
-    credentials: true, // Allow cookies and authentication headers
-  }),
+    origin: FRONTEND_URL,
+    credentials: true,
+  })
 );
 app.use(express.json());
-app.use(cors());
+app.use(morgan("dev"));
 
+// Optional: log all requests (for debugging)
+app.use((req, _res, next) => {
+  console.log(`➡️ ${req.method} ${req.url}`);
+  next();
+});
+
+// Routes
 app.use("/api/documents", documentRoutes);
 
+// Test route
+app.get("/api/ping", (_req, res) => {
+  res.send("pong");
+});
 
-
-// Handle 404 errors
+// 404 Handler
 app.use((req, res) => {
   res.status(404).json({ message: 'Route Not Found' });
 });
 
-// Global Error Handler (must be the last middleware)
-// app.use(errorHandler);
+// Global Error Handler
+app.use(errorHandler);
 
 // Start Server
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
 
-// Gracefully handle Prisma disconnection when the server stops
+// Graceful Shutdown
 process.on('SIGINT', async () => {
   await prisma.$disconnect();
   console.log('🔌 Prisma disconnected. Server shutting down.');
