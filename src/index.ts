@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import morgan from "morgan";
+import fileUpload from "express-fileupload";
 import documentRoutes from "./routes/documentRoutes";
 import prisma from './config/database';
 import { FRONTEND_URL } from './config/config';
@@ -20,13 +21,14 @@ app.use(
   })
 );
 app.use(express.json());
+app.use(fileUpload({ useTempFiles: true }));
 app.use(morgan("dev"));
 
 // Optional: log all requests (for debugging)
-app.use((req, _res, next) => {
-  console.log(`➡️ ${req.method} ${req.url}`);
-  next();
-});
+// app.use((req, _res, next) => {
+//   console.log(`➡️ ${req.method} ${req.url}`);
+//   next();
+// });
 
 // Routes
 app.use("/api/documents", documentRoutes);

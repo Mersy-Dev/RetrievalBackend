@@ -10,13 +10,18 @@ datasource db {
 
 
 model Document {
-  id        Int      @id @default(autoincrement())
-  title     String
-  summary   String
-  content   String
-  createdAt DateTime @default(now())
-  tags      Tag[]    // many-to-many relation
+  id               Int       @id @default(autoincrement())
+  title            String
+  summary          String
+  content          String
+  author           String
+  publicationYear  Int
+  sourceUrl        String?     // optional: link to where the article originated
+  cloudinaryUrl    String      // for the uploaded file
+  createdAt        DateTime    @default(now())
+  tags             Tag[]       // many-to-many relation
 }
+
 
 model Tag {
   id        Int        @id @default(autoincrement())

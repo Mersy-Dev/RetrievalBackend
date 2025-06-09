@@ -1,11 +1,15 @@
 import { Request, Response } from "express";
 import { PrismaClient } from "../generated/client";
+import { uploadToCloudinary } from "../utils/cloudinary";
+
 
 const prisma = new PrismaClient();
 
 // /api/documents/search?q=malaria+symptoms
-export const searchDocuments = async (req: Request, res: Response): Promise<void> => {
-  console.log("🔥 searchDocuments function triggered");
+export const searchDocuments = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   const query = req.query.q as string;
 
   if (!query) {
@@ -14,8 +18,6 @@ export const searchDocuments = async (req: Request, res: Response): Promise<void
     return Promise.resolve(); // Early return with resolved promise
   }
 
-  console.log(`Received search query: ${query}`);
-
   try {
     const results = await prisma.document.findMany({
       where: {
@@ -23,6 +25,8 @@ export const searchDocuments = async (req: Request, res: Response): Promise<void
           { title: { contains: query } },
           { summary: { contains: query } },
           { content: { contains: query } },
+          { author: { contains: query } },
+          { sourceUrl: { contains: query } },
         ],
       },
       take: 10,
@@ -32,6 +36,52 @@ export const searchDocuments = async (req: Request, res: Response): Promise<void
   } catch (error) {
     console.error("Search failed:", error);
     res.status(500).json({ error: "Search failed." });
+  }
+};
+
+// /api/documents/upload
+export const uploadDocument = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { title, summary, content, author, publicationYear, sourceUrl } =
+      req.body;
+
+    if (!req.files || !req.files.document) {
+      res.status(400).json({ error: "No document file uploaded" });
+      return;
+    }
+
+    let documentFile = req.files.document;
+    if (Array.isArray(documentFile)) {
+      documentFile = documentFile[0];
+    }
+
+    // Upload to Cloudinary
+    const cloudinaryResponse = await uploadToCloudinary(documentFile);
+
+    const newDocument = await prisma.document.create({
+      data: {
+        title,
+        summary,
+        content,
+        author,
+        publicationYear: parseInt(publicationYear),
+        sourceUrl,
+        cloudinaryUrl: cloudinaryResponse.secure_url,
+      },
+    });
+
+    res
+      .status(201)
+      .json({
+        message: "Document uploaded successfully",
+        document: newDocument,
+      });
+  } catch (error) {
+    console.error("Upload failed:", error);
+    res.status(500).json({ error: "Document upload failed." });
   }
 };
 
