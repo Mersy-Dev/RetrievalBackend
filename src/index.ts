@@ -3,7 +3,10 @@ import cors from "cors";
 import dotenv from "dotenv";
 import morgan from "morgan";
 import fileUpload from "express-fileupload";
+import cookieParser from 'cookie-parser';
+
 import documentRoutes from "./routes/documentRoutes";
+import adminRoutes from "./routes/adminRoutes";
 import prisma from './config/database';
 import { FRONTEND_URL } from './config/config';
 import { errorHandler } from './utils/errors';
@@ -20,6 +23,7 @@ app.use(
     credentials: true,
   })
 );
+app.use(cookieParser());
 app.use(express.json());
 app.use(fileUpload({ useTempFiles: true }));
 app.use(morgan("dev"));
@@ -32,6 +36,8 @@ app.use(morgan("dev"));
 
 // Routes
 app.use("/api/documents", documentRoutes);
+app.use('/api/admin', adminRoutes);
+
 
 // Test route
 app.get("/api/ping", (_req, res) => {
