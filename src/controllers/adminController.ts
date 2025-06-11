@@ -123,14 +123,6 @@ export const loginAdmin = async (
       return;
     }
 
-    // ✅ Check if email is verified
-    if (!admin.isEmailVerified) {
-      res
-        .status(403)
-        .json({ message: "Please verify your email before logging in." });
-      return;
-    }
-
     const isMatch = await bcrypt.compare(password, admin.password);
     if (!isMatch) {
       res.status(400).json({ message: "Invalid credentials" });
@@ -152,7 +144,16 @@ export const loginAdmin = async (
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 
-    res.status(200).json({ accessToken });
+    res.status(200).json({
+      message: `Hey there! 😊 You're logged in successfully. ${
+        admin.isEmailVerified
+          ? "You’re all set and verified. Enjoy your day!"
+          : "But we still need you to verify your email. Check your inbox!"
+      }`,
+      accessToken,
+      refreshToken,
+      user: filterUserInfo(admin),
+    });
   } catch (err) {
     console.error("Login Error:", err);
     res.status(500).json({ message: "Server error" });
@@ -275,27 +276,38 @@ export const requestPasswordReset = async (
 };
 
 export const resetPassword = async (
-  req: Request,
-  res: Response
+    req: Request,
+    res: Response
 ): Promise<void> => {
-  const { token } = req.params;
-  const { newPassword } = req.body;
+    const { token } = req.params;
+    const { newPassword } = req.body;
 
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as {
-      adminId: number;
-    };
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET!) as {
+            adminId: number;
+        };
 
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-    await prisma.admin.update({
-      where: { id: decoded.adminId },
-      data: { password: hashedPassword },
-    });
+        await prisma.admin.update({
+            where: { id: decoded.adminId },
+            data: { password: hashedPassword },
+        });
 
-    res.status(200).json({ message: "Password reset successful" });
-  } catch (err) {
-    console.error("Reset Password Error:", err);
-    res.status(403).json({ message: "Invalid or expired token" });
-  }
+        res.status(200).json({ message: "Password reset successful" });
+    } catch (err) {
+        console.error("Reset Password Error:", err);
+        res.status(403).json({ message: "Invalid or expired token" });
+    }
 };
+
+function filterUserInfo(admin: { id: number; name: string; email: string; password: string; refreshToken: string | null; isEmailVerified: boolean; createdAt: Date; }) {
+    return {
+        id: admin.id,
+        name: admin.name,
+        email: admin.email,
+        isEmailVerified: admin.isEmailVerified,
+        createdAt: admin.createdAt,
+    };
+}
+

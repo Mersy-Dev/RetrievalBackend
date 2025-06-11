@@ -33,3 +33,4 @@ export const seedAdminUsers = async () => {
 
   console.log("✅ Admin users seeded.");
 };
+
