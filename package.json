@@ -10,6 +10,9 @@
     "seed": "ts-node src/prisma/seeds/index.ts",
     "prisma-generate": "prisma generate"
   },
+  "prisma": {
+    "seed": "ts-node src/prisma/seeds/index.ts"
+  },
   "dependencies": {
     "@prisma/client": "^6.9.0",
     "bcrypt": "^6.0.0",

@@ -23,9 +23,19 @@ export const registerAdmin = async (
   req: Request,
   res: Response
 ): Promise<void> => {
-  const { name, email, password } = req.body;
+  const { name, email, password, confirmPassword } = req.body;
 
   try {
+    if (!name || !email || !password || !confirmPassword) {
+      res.status(400).json({ message: "All fields are required" });
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      res.status(400).json({ message: "Passwords do not match" });
+      return;
+    }
+
     const existingAdmin = await prisma.admin.findUnique({ where: { email } });
     if (existingAdmin) {
       res.status(400).json({ message: "Admin with this email already exists" });
@@ -39,11 +49,10 @@ export const registerAdmin = async (
         name,
         email,
         password: hashedPassword,
-        isEmailVerified: false, // Optional if default is already false
+        isEmailVerified: false,
       },
     });
 
-    // Generate Email Verification Token
     const verificationToken = jwt.sign(
       { adminId: newAdmin.id },
       process.env.JWT_SECRET!,
@@ -52,7 +61,6 @@ export const registerAdmin = async (
 
     const verificationLink = `http://localhost:3000/verify-email/${verificationToken}`;
 
-    // Send verification email
     await sendEmail(
       email,
       "Verify Your Email",
@@ -62,9 +70,26 @@ export const registerAdmin = async (
        <p>This link will expire in 1 hour.</p>`
     );
 
+    const accessToken = generateAccessToken(newAdmin.id);
+    const refreshToken = generateRefreshToken(newAdmin.id);
+
+    await prisma.admin.update({
+      where: { id: newAdmin.id },
+      data: { refreshToken },
+    });
+
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
+
     res.status(201).json({
-      message: "Admin registered successfully. Verification email sent.",
-      admin: { id: newAdmin.id, email: newAdmin.email },
+      message: `Welcome, ${name}! 🎉 Your account has been created successfully. Please check your email to verify your account.`,
+      accessToken,
+      refreshToken,
+      user: filterUserInfo(newAdmin),
     });
   } catch (error) {
     console.error("Register Error:", error);
@@ -276,38 +301,45 @@ export const requestPasswordReset = async (
 };
 
 export const resetPassword = async (
-    req: Request,
-    res: Response
+  req: Request,
+  res: Response
 ): Promise<void> => {
-    const { token } = req.params;
-    const { newPassword } = req.body;
+  const { token } = req.params;
+  const { newPassword } = req.body;
 
-    try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET!) as {
-            adminId: number;
-        };
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as {
+      adminId: number;
+    };
 
-        const hashedPassword = await bcrypt.hash(newPassword, 10);
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-        await prisma.admin.update({
-            where: { id: decoded.adminId },
-            data: { password: hashedPassword },
-        });
+    await prisma.admin.update({
+      where: { id: decoded.adminId },
+      data: { password: hashedPassword },
+    });
 
-        res.status(200).json({ message: "Password reset successful" });
-    } catch (err) {
-        console.error("Reset Password Error:", err);
-        res.status(403).json({ message: "Invalid or expired token" });
-    }
+    res.status(200).json({ message: "Password reset successful" });
+  } catch (err) {
+    console.error("Reset Password Error:", err);
+    res.status(403).json({ message: "Invalid or expired token" });
+  }
 };
 
-function filterUserInfo(admin: { id: number; name: string; email: string; password: string; refreshToken: string | null; isEmailVerified: boolean; createdAt: Date; }) {
-    return {
-        id: admin.id,
-        name: admin.name,
-        email: admin.email,
-        isEmailVerified: admin.isEmailVerified,
-        createdAt: admin.createdAt,
-    };
+function filterUserInfo(admin: {
+  id: number;
+  name: string;
+  email: string;
+  password: string;
+  refreshToken: string | null;
+  isEmailVerified: boolean;
+  createdAt: Date;
+}) {
+  return {
+    id: admin.id,
+    name: admin.name,
+    email: admin.email,
+    isEmailVerified: admin.isEmailVerified,
+    createdAt: admin.createdAt,
+  };
 }
-
