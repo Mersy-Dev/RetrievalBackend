@@ -2,8 +2,34 @@ import { Request, Response } from "express";
 import { PrismaClient } from "../generated/client";
 import { uploadToCloudinary } from "../lib/cloudinary";
 
-
 const prisma = new PrismaClient();
+
+
+// Get a single document by ID
+export const getSingleDocument = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { id } = req.params;
+
+    // ✅ Find document by ID including tags
+    const document = await prisma.document.findUnique({
+      where: { id: Number(id) },
+      include: { tags: true },
+    });
+
+    if (!document) {
+      res.status(404).json({ error: "Document not found" });
+      return;
+    }
+
+    res.status(200).json(document);
+  } catch (error) {
+    console.error("Error fetching document:", error);
+    res.status(500).json({ error: "Failed to fetch document." });
+  }
+};
 
 // Get all documents
 export const getAllDocuments = async (
@@ -62,6 +88,7 @@ export const searchDocuments = async (
 };
 
 // /api/documents/upload
+
 export const uploadDocument = async (
   req: Request,
   res: Response
@@ -74,7 +101,7 @@ export const uploadDocument = async (
       publishedYear,
       publisher,
       referenceLink,
-      tags, // optional: array of tag IDs or names
+      tags, // could be string, array, or undefined
     } = req.body;
 
     if (!req.files || !req.files.document) {
@@ -87,22 +114,34 @@ export const uploadDocument = async (
       documentFile = documentFile[0];
     }
 
-    // Upload to Cloudinary
+    // ✅ Handle tags consistently
+    let tagsArray: string[] = [];
+    if (tags) {
+      if (Array.isArray(tags)) {
+        // Already an array (e.g. tags[]=malaria&tags[]=health)
+        tagsArray = tags;
+      } else if (typeof tags === "string") {
+        // Could be "malaria,bilingual,health"
+        tagsArray = tags.split(",").map((t) => t.trim());
+      }
+    }
+
+    // Upload file to Cloudinary
     const cloudinaryResponse = await uploadToCloudinary(documentFile);
 
-    // Create document with tags if provided
+    // Save document with tags
     const newDocument = await prisma.document.create({
       data: {
         title,
         description,
         author,
-        publishedYear: parseInt(publishedYear),
+        publishedYear: parseInt(publishedYear, 10),
         publisher: publisher || null,
         referenceLink: referenceLink || null,
         cloudinaryUrl: cloudinaryResponse.secure_url,
-        tags: tags
+        tags: tagsArray.length
           ? {
-              connectOrCreate: tags.map((tagName: string) => ({
+              connectOrCreate: tagsArray.map((tagName: string) => ({
                 where: { name: tagName },
                 create: { name: tagName },
               })),
@@ -121,6 +160,92 @@ export const uploadDocument = async (
     res.status(500).json({ error: "Document upload failed." });
   }
 };
+
+//edit documents
+export const updateDocument = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const {
+      title,
+      description,
+      author,
+      publishedYear,
+      publisher,
+      referenceLink,
+      tags,
+    } = req.body;
+
+    // ✅ Find existing document
+    const existingDoc = await prisma.document.findUnique({
+      where: { id: Number(id) },
+      include: { tags: true },
+    });
+
+    if (!existingDoc) {
+      res.status(404).json({ error: "Document not found" });
+      return;
+    }
+
+    // ✅ Handle file update (if provided)
+    let updatedCloudinaryUrl = existingDoc.cloudinaryUrl;
+    if (req.files && req.files.document) {
+      let documentFile = req.files.document;
+      if (Array.isArray(documentFile)) {
+        documentFile = documentFile[0];
+      }
+      const cloudinaryResponse = await uploadToCloudinary(documentFile);
+      updatedCloudinaryUrl = cloudinaryResponse.secure_url;
+    }
+
+    // ✅ Handle tags update
+    let tagsArray: string[] = [];
+    if (tags) {
+      if (Array.isArray(tags)) {
+        tagsArray = tags;
+      } else if (typeof tags === "string") {
+        tagsArray = tags.split(",").map((t) => t.trim());
+      }
+    }
+
+    // ✅ Update document
+    const updatedDocument = await prisma.document.update({
+      where: { id: Number(id) },
+      data: {
+        title: title ?? existingDoc.title,
+        description: description ?? existingDoc.description,
+        author: author ?? existingDoc.author,
+        publishedYear: publishedYear
+          ? parseInt(publishedYear, 10)
+          : existingDoc.publishedYear,
+        publisher: publisher ?? existingDoc.publisher,
+        referenceLink: referenceLink ?? existingDoc.referenceLink,
+        cloudinaryUrl: updatedCloudinaryUrl,
+        ...(tagsArray.length && {
+          tags: {
+            set: [], // disconnect old tags first
+            connectOrCreate: tagsArray.map((tagName: string) => ({
+              where: { name: tagName },
+              create: { name: tagName },
+            })),
+          },
+        }),
+      },
+      include: { tags: true },
+    });
+
+    res.status(200).json({
+      message: "Document updated successfully",
+      document: updatedDocument,
+    });
+  } catch (error) {
+    console.error("Update failed:", error);
+    res.status(500).json({ error: "Document update failed." });
+  }
+};
+
 
 // Optional: for displaying suggested tags
 export const getTagSuggestions = async (_req: Request, res: Response) => {
