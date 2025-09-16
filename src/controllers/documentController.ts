@@ -1,6 +1,5 @@
 import { Request, Response } from "express";
 import { PrismaClient } from "../generated/client";
-// import { uploadToCloudinary } from "../lib/cloudinary";
 import { supabase } from "../utils/supabaseClient"; // 👈 we'll create this
 import { UploadedFile } from "express-fileupload";
 import { v4 as uuidv4 } from "uuid";
@@ -8,17 +7,22 @@ import { v4 as uuidv4 } from "uuid";
 const prisma = new PrismaClient();
 
 // Get a single document by ID
-export const getSingleDocument = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
+// Get a single document by ID
+
+
+export const getSingleDocument = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
 
-    // ✅ Find document by ID including tags
+    // ✅ Fetch document with all related data
     const document = await prisma.document.findUnique({
       where: { id: Number(id) },
-      include: { tags: true },
+      include: {
+        tags: true,
+        relatedDocs: true,
+        relatedByDocuments: true,
+        feedbacks: true,
+      },
     });
 
     if (!document) {
@@ -26,7 +30,24 @@ export const getSingleDocument = async (
       return;
     }
 
-    res.status(200).json(document);
+    // ✅ Generate signed URL for private file
+    let signedUrl: string | null = null;
+    const { data: signedUrlData, error: signedUrlError } = await supabase.storage
+      .from("documents")
+      .createSignedUrl(document.storageUrl, 60 * 60); // 1 hour expiry
+
+    if (signedUrlError) {
+      console.error("Supabase signed URL error:", signedUrlError.message);
+      // Do not block sending the document; just omit signedUrl
+    } else {
+      signedUrl = signedUrlData?.signedUrl ?? null;
+    }
+
+    // ✅ Return complete document
+    res.status(200).json({
+      ...document,
+      signedUrl,
+    });
   } catch (error) {
     console.error("Error fetching document:", error);
     res.status(500).json({ error: "Failed to fetch document." });
@@ -135,13 +156,13 @@ export const uploadDocument = async (
     // ✅ Upload file to Supabase Storage
     const fileExt = documentFile.name.split(".").pop();
     const uniqueFileName = `${uuidv4()}.${fileExt}`;
-    const filePath = `documents/${uniqueFileName}`; // 👈 folder inside bucket
+    const filePath = `uploads/${uniqueFileName}`; // folder inside bucket
 
     const { error: uploadError } = await supabase.storage
-      .from("documents") // 👈 MUST match your bucket name in Supabase UI
+      .from("documents")
       .upload(filePath, documentFile.data, {
         contentType: documentFile.mimetype,
-        upsert: true, // 👈 allow overwrite if file exists
+        upsert: true,
       });
 
     if (uploadError) {
@@ -150,12 +171,14 @@ export const uploadDocument = async (
       return;
     }
 
-    // ✅ Get public URL
-    const {
-      data: { publicUrl },
-    } = supabase.storage.from("documents").getPublicUrl(filePath);
+    // ✅ Calculate file size (MB)
+    const fileSizeInMB = documentFile.size / (1024 * 1024);
 
-    // ✅ Save metadata to DB
+    // (Optional) Extract pages + reading time here with pdf-parse
+    const pages = null; // placeholder
+    const estimatedReadingTime = null;
+
+    // ✅ Save metadata to DB (without signedUrl)
     const newDocument = await prisma.document.create({
       data: {
         title,
@@ -164,7 +187,10 @@ export const uploadDocument = async (
         publishedYear: publishedYear ? parseInt(publishedYear, 10) : 0,
         publisher: publisher || null,
         referenceLink: referenceLink || null,
-        storageUrl: publicUrl,
+        storageUrl: filePath,
+        fileSize: fileSizeInMB,
+        pages,
+        readingTime: estimatedReadingTime,
         tags: tagsArray.length
           ? {
               connectOrCreate: tagsArray.map((tagName: string) => ({
@@ -186,7 +212,11 @@ export const uploadDocument = async (
     res.status(500).json({ error: "Document upload failed." });
   }
 };
-//edit documentsy
+
+
+
+
+//edit documents
 export const updateDocument = async (
   req: Request,
   res: Response
@@ -216,6 +246,9 @@ export const updateDocument = async (
 
     // ✅ Handle file update (if provided)
     let updatedStorageUrl = existingDoc.storageUrl;
+    let updatedSignedUrl = existingDoc.signedUrl;
+    let fileSizeInMB = existingDoc.fileSize;
+
     if (req.files && req.files.document) {
       let documentFile = req.files.document as UploadedFile;
       if (Array.isArray(documentFile)) {
@@ -223,13 +256,13 @@ export const updateDocument = async (
       }
 
       const fileExt = documentFile.name.split(".").pop();
-      const filePath = `documents/${uuidv4()}.${fileExt}`;
+      const filePath = `uploads/${uuidv4()}.${fileExt}`;
 
       const { error: uploadError } = await supabase.storage
         .from("documents")
         .upload(filePath, documentFile.data, {
           contentType: documentFile.mimetype,
-          upsert: true, // 👈 allow overwrite if same filePath
+          upsert: true,
         });
 
       if (uploadError) {
@@ -238,11 +271,21 @@ export const updateDocument = async (
         return;
       }
 
-      const {
-        data: { publicUrl },
-      } = supabase.storage.from("documents").getPublicUrl(filePath);
+      // ✅ Generate new signed URL
+      const { data: signedUrlData, error: signedUrlError } =
+        await supabase.storage
+          .from("documents")
+          .createSignedUrl(filePath, 60 * 60 * 24);
 
-      updatedStorageUrl = publicUrl;
+      if (signedUrlError) {
+        console.error("Signed URL error:", signedUrlError.message);
+        res.status(500).json({ error: "Failed to generate signed URL" });
+        return;
+      }
+
+      updatedStorageUrl = filePath;
+      updatedSignedUrl = signedUrlData?.signedUrl || null;
+      fileSizeInMB = documentFile.size / (1024 * 1024);
     }
 
     // ✅ Handle tags update
@@ -268,6 +311,10 @@ export const updateDocument = async (
         publisher: publisher ?? existingDoc.publisher,
         referenceLink: referenceLink ?? existingDoc.referenceLink,
         storageUrl: updatedStorageUrl,
+        signedUrl: updatedSignedUrl,
+        fileSize: fileSizeInMB,
+        readingTime: existingDoc.readingTime,
+        pages: existingDoc.pages,
         ...(tagsArray.length && {
           tags: {
             set: [], // disconnect old tags first
@@ -282,7 +329,7 @@ export const updateDocument = async (
     });
 
     res.status(200).json({
-      message: "Document updated successfully",
+      message: "✅ Document updated successfully",
       document: updatedDocument,
     });
   } catch (error) {
@@ -290,6 +337,7 @@ export const updateDocument = async (
     res.status(500).json({ error: "Document update failed." });
   }
 };
+
 
 // ✅ Delete a document
 export const deleteDocument = async (

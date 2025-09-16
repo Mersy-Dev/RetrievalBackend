@@ -19,24 +19,45 @@ model Admin {
 }
 
 
-
 model Document {
-  id            Int       @id @default(autoincrement())
+  id            Int         @id @default(autoincrement())
   title         String
-  description   String
+  description   String?
   author        String
   publishedYear Int
   publisher     String?
   referenceLink String?
-  storageUrl    String      // 👈 renamed field
-  createdAt     DateTime   @default(now())
-  tags          Tag[]
-}
+  storageUrl    String      // Supabase path
+  signedUrl     String?     // temporary access URL
+  pages         Int?        // number of pages
+  readingTime   Int?        // estimated minutes
+  fileSize      Float?      // in MB
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
 
+  tags          Tag[]
+  feedbacks     Feedback[]
+
+  // ✅ Proper self-relation for related documents
+  relatedDocs       Document[] @relation("RelatedDocuments")
+  relatedByDocuments Document[] @relation("RelatedDocuments")
+}
 
 
 model Tag {
   id        Int        @id @default(autoincrement())
-  name      String     @unique
-  documents Document[] // inverse side of many-to-many
+  name      String    @unique
+  documents Document[]
 }
+
+model Feedback {
+  id         Int       @id @default(autoincrement())
+  rating     Int       // 1–5 stars
+  comment    String?
+  createdAt  DateTime  @default(now())
+
+  // relation to Document
+  document   Document  @relation(fields: [documentId], references: [id])
+  documentId Int
+}
+

@@ -39,7 +39,7 @@ export const seedDocuments = async () => {
     create: { name: "🛡️ Preventive Measures" },
   });
 
-  // Step 2: Seed Documents
+  // Step 2: Seed Documents with metadata
   await prisma.document.createMany({
     data: [
       {
@@ -49,7 +49,11 @@ export const seedDocuments = async () => {
         publishedYear: 2023,
         publisher: "University of Ibadan Press",
         referenceLink: "https://example.com/malaria-symptoms",
-        storageUrl: "https://your-supabase-url.supabase.co/storage/v1/object/public/documents/malaria-symptoms.pdf",
+        storageUrl:
+          "https://your-supabase-url.supabase.co/storage/v1/object/public/documents/malaria-symptoms.pdf",
+        pages: 10,
+        readingTime: 12,
+        fileSize: 1.8,
       },
       {
         title: "2025 WHO Guidelines for Malaria Treatment",
@@ -58,7 +62,11 @@ export const seedDocuments = async () => {
         publishedYear: 2025,
         publisher: "WHO",
         referenceLink: "https://www.who.int/guidelines/malaria",
-        storageUrl: "https://your-supabase-url.supabase.co/storage/v1/object/public/documents/who-malaria-guidelines.pdf",
+        storageUrl:
+          "https://your-supabase-url.supabase.co/storage/v1/object/public/documents/who-malaria-guidelines.pdf",
+        pages: 40,
+        readingTime: 45,
+        fileSize: 5.6,
       },
       {
         title: "Malaria Outbreaks in West Africa – Case Report",
@@ -67,16 +75,25 @@ export const seedDocuments = async () => {
         publishedYear: 2024,
         publisher: "African Medical Journal",
         referenceLink: null,
-        storageUrl: "https://your-supabase-url.supabase.co/storage/v1/object/public/documents/west-africa-outbreak.pdf",
+        storageUrl:
+          "https://your-supabase-url.supabase.co/storage/v1/object/public/documents/west-africa-outbreak.pdf",
+        pages: 18,
+        readingTime: 20,
+        fileSize: 3.2,
       },
       {
         title: "Preventive Measures to Reduce Malaria Risk",
-        description: "Practical steps for communities to prevent malaria transmission...",
+        description:
+          "Practical steps for communities to prevent malaria transmission...",
         author: "Dr. Grace Adeyemi",
         publishedYear: 2022,
         publisher: "Public Health Nigeria",
         referenceLink: "https://example.com/prevent-malaria",
-        storageUrl: "https://your-supabase-url.supabase.co/storage/v1/object/public/documents/malaria-prevention.pdf",
+        storageUrl:
+          "https://your-supabase-url.supabase.co/storage/v1/object/public/documents/malaria-prevention.pdf",
+        pages: 15,
+        readingTime: 18,
+        fileSize: 2.1,
       },
       {
         title: "Case Studies on Severe Malaria in Adults",
@@ -85,21 +102,30 @@ export const seedDocuments = async () => {
         publishedYear: 2021,
         publisher: "Nigerian Journal of Medicine",
         referenceLink: "https://example.com/severe-malaria-cases",
-        storageUrl: "https://your-supabase-url.supabase.co/storage/v1/object/public/documents/severe-malaria.pdf",
+        storageUrl:
+          "https://your-supabase-url.supabase.co/storage/v1/object/public/documents/severe-malaria.pdf",
+        pages: 22,
+        readingTime: 25,
+        fileSize: 2.7,
       },
       {
         title: "Recent Research on Malaria Parasite Resistance",
-        description: "Updates on drug-resistant malaria strains and new research findings...",
+        description:
+          "Updates on drug-resistant malaria strains and new research findings...",
         author: "Dr. Lillian Mensah",
         publishedYear: 2025,
         publisher: "West African Research Institute",
         referenceLink: "https://example.com/malaria-research",
-        storageUrl: "https://your-supabase-url.supabase.co/storage/v1/object/public/documents/malaria-research.pdf",
+        storageUrl:
+          "https://your-supabase-url.supabase.co/storage/v1/object/public/documents/malaria-research.pdf",
+        pages: 30,
+        readingTime: 35,
+        fileSize: 4.5,
       },
     ],
   });
 
-  // Step 3: Connect Tags to Documents
+  // Step 3: Connect Tags
   const documents = await prisma.document.findMany();
 
   await prisma.document.update({
@@ -130,5 +156,24 @@ export const seedDocuments = async () => {
   await prisma.document.update({
     where: { id: documents[5].id },
     data: { tags: { connect: [{ id: malariaTag.id }, { id: researchTag.id }] } },
+  });
+
+  // Step 4: Add Related Documents
+  await prisma.document.update({
+    where: { id: documents[0].id },
+    data: {
+      relatedByDocuments: {
+        connect: [{ id: documents[1].id }, { id: documents[2].id }],
+      },
+    },
+  });
+
+  await prisma.document.update({
+    where: { id: documents[1].id },
+    data: {
+      relatedByDocuments: {
+        connect: [{ id: documents[0].id }, { id: documents[5].id }],
+      },
+    },
   });
 };
