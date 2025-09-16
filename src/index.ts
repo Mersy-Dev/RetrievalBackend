@@ -25,7 +25,12 @@ app.use(
 );
 app.use(cookieParser());
 app.use(express.json());
-app.use(fileUpload({ useTempFiles: true }));
+app.use(
+  fileUpload({
+    useTempFiles: false, // 👈 keeps file in memory
+    limits: { fileSize: 50 * 1024 * 1024 }, // max 50MB
+  })
+);
 app.use(morgan("dev"));
 
 // Optional: log all requests (for debugging)
@@ -44,10 +49,14 @@ app.get("/api/ping", (_req, res) => {
   res.send("pong");
 });
 
+
+
+
 // 404 Handler
 app.use((req, res) => {
   res.status(404).json({ message: 'Route Not Found' });
 });
+
 
 // Global Error Handler
 app.use(errorHandler);

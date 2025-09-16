@@ -28,10 +28,11 @@ model Document {
   publishedYear Int
   publisher     String?
   referenceLink String?
-  cloudinaryUrl String
+  storageUrl    String      // 👈 renamed field
   createdAt     DateTime   @default(now())
   tags          Tag[]
 }
+
 
 
 model Tag {

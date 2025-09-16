@@ -1,5 +1,4 @@
 import { v2 as cloudinary } from "cloudinary";
-import { Request } from "express";
 import { UploadedFile } from "express-fileupload";
 
 cloudinary.config({
@@ -9,8 +8,29 @@ cloudinary.config({
 });
 
 export const uploadToCloudinary = async (file: UploadedFile) => {
-  return await cloudinary.uploader.upload(file.tempFilePath, {
-    resource_type: "auto", // auto-detect file type
+  const result = await cloudinary.uploader.upload(file.tempFilePath, {
+    resource_type: "raw",
     folder: "documents",
   });
+
+  // Generate inline preview URL
+  const pdfUrl = cloudinary.url(result.public_id, {
+    resource_type: "raw",
+    type: "upload",
+    flags: "inline",
+  });
+
+  return { ...result, pdfUrl };
+};
+
+// Function to delete a file from Cloudinary using its public ID
+export const deleteFromCloudinary = async (publicId: string) => {
+  try {
+    const result = await cloudinary.uploader.destroy(publicId, {
+      resource_type: "raw",
+    });
+    return result;
+  } catch (error) {
+    throw new Error("Failed to delete file from Cloudinary");
+  } 
 };

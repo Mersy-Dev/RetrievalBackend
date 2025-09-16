@@ -49,7 +49,7 @@ export const seedDocuments = async () => {
         publishedYear: 2023,
         publisher: "University of Ibadan Press",
         referenceLink: "https://example.com/malaria-symptoms",
-        cloudinaryUrl: "https://res.cloudinary.com/demo/image/upload/v1/malaria-symptoms.pdf",
+        storageUrl: "https://your-supabase-url.supabase.co/storage/v1/object/public/documents/malaria-symptoms.pdf",
       },
       {
         title: "2025 WHO Guidelines for Malaria Treatment",
@@ -58,7 +58,7 @@ export const seedDocuments = async () => {
         publishedYear: 2025,
         publisher: "WHO",
         referenceLink: "https://www.who.int/guidelines/malaria",
-        cloudinaryUrl: "https://res.cloudinary.com/demo/image/upload/v1/who-malaria-guidelines.pdf",
+        storageUrl: "https://your-supabase-url.supabase.co/storage/v1/object/public/documents/who-malaria-guidelines.pdf",
       },
       {
         title: "Malaria Outbreaks in West Africa – Case Report",
@@ -67,7 +67,7 @@ export const seedDocuments = async () => {
         publishedYear: 2024,
         publisher: "African Medical Journal",
         referenceLink: null,
-        cloudinaryUrl: "https://res.cloudinary.com/demo/image/upload/v1/west-africa-outbreak.pdf",
+        storageUrl: "https://your-supabase-url.supabase.co/storage/v1/object/public/documents/west-africa-outbreak.pdf",
       },
       {
         title: "Preventive Measures to Reduce Malaria Risk",
@@ -76,7 +76,7 @@ export const seedDocuments = async () => {
         publishedYear: 2022,
         publisher: "Public Health Nigeria",
         referenceLink: "https://example.com/prevent-malaria",
-        cloudinaryUrl: "https://res.cloudinary.com/demo/image/upload/v1/malaria-prevention.pdf",
+        storageUrl: "https://your-supabase-url.supabase.co/storage/v1/object/public/documents/malaria-prevention.pdf",
       },
       {
         title: "Case Studies on Severe Malaria in Adults",
@@ -85,7 +85,7 @@ export const seedDocuments = async () => {
         publishedYear: 2021,
         publisher: "Nigerian Journal of Medicine",
         referenceLink: "https://example.com/severe-malaria-cases",
-        cloudinaryUrl: "https://res.cloudinary.com/demo/image/upload/v1/severe-malaria.pdf",
+        storageUrl: "https://your-supabase-url.supabase.co/storage/v1/object/public/documents/severe-malaria.pdf",
       },
       {
         title: "Recent Research on Malaria Parasite Resistance",
@@ -94,7 +94,7 @@ export const seedDocuments = async () => {
         publishedYear: 2025,
         publisher: "West African Research Institute",
         referenceLink: "https://example.com/malaria-research",
-        cloudinaryUrl: "https://res.cloudinary.com/demo/image/upload/v1/malaria-research.pdf",
+        storageUrl: "https://your-supabase-url.supabase.co/storage/v1/object/public/documents/malaria-research.pdf",
       },
     ],
   });
@@ -102,7 +102,6 @@ export const seedDocuments = async () => {
   // Step 3: Connect Tags to Documents
   const documents = await prisma.document.findMany();
 
-  // Tag associations (example)
   await prisma.document.update({
     where: { id: documents[0].id },
     data: { tags: { connect: [{ id: malariaTag.id }] } },

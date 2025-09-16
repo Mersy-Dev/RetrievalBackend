@@ -1,9 +1,11 @@
 import { Request, Response } from "express";
 import { PrismaClient } from "../generated/client";
-import { uploadToCloudinary } from "../lib/cloudinary";
+// import { uploadToCloudinary } from "../lib/cloudinary";
+import { supabase } from "../utils/supabaseClient"; // 👈 we'll create this
+import { UploadedFile } from "express-fileupload";
+import { v4 as uuidv4 } from "uuid";
 
 const prisma = new PrismaClient();
-
 
 // Get a single document by ID
 export const getSingleDocument = async (
@@ -101,7 +103,7 @@ export const uploadDocument = async (
       publishedYear,
       publisher,
       referenceLink,
-      tags, // could be string, array, or undefined
+      tags,
     } = req.body;
 
     if (!req.files || !req.files.document) {
@@ -109,36 +111,60 @@ export const uploadDocument = async (
       return;
     }
 
-    let documentFile = req.files.document;
+    let documentFile = req.files.document as UploadedFile;
     if (Array.isArray(documentFile)) {
       documentFile = documentFile[0];
     }
 
-    // ✅ Handle tags consistently
+    // ✅ Normalize tags
     let tagsArray: string[] = [];
     if (tags) {
       if (Array.isArray(tags)) {
-        // Already an array (e.g. tags[]=malaria&tags[]=health)
         tagsArray = tags;
       } else if (typeof tags === "string") {
-        // Could be "malaria,bilingual,health"
         tagsArray = tags.split(",").map((t) => t.trim());
       }
     }
 
-    // Upload file to Cloudinary
-    const cloudinaryResponse = await uploadToCloudinary(documentFile);
+    console.log("File received:", {
+      name: documentFile.name,
+      size: documentFile.size,
+      mimetype: documentFile.mimetype,
+    });
 
-    // Save document with tags
+    // ✅ Upload file to Supabase Storage
+    const fileExt = documentFile.name.split(".").pop();
+    const uniqueFileName = `${uuidv4()}.${fileExt}`;
+    const filePath = `documents/${uniqueFileName}`; // 👈 folder inside bucket
+
+    const { error: uploadError } = await supabase.storage
+      .from("documents") // 👈 MUST match your bucket name in Supabase UI
+      .upload(filePath, documentFile.data, {
+        contentType: documentFile.mimetype,
+        upsert: true, // 👈 allow overwrite if file exists
+      });
+
+    if (uploadError) {
+      console.error("Supabase upload error:", uploadError.message);
+      res.status(500).json({ error: "Failed to upload to Supabase" });
+      return;
+    }
+
+    // ✅ Get public URL
+    const {
+      data: { publicUrl },
+    } = supabase.storage.from("documents").getPublicUrl(filePath);
+
+    // ✅ Save metadata to DB
     const newDocument = await prisma.document.create({
       data: {
         title,
         description,
         author,
-        publishedYear: parseInt(publishedYear, 10),
+        publishedYear: publishedYear ? parseInt(publishedYear, 10) : 0,
         publisher: publisher || null,
         referenceLink: referenceLink || null,
-        cloudinaryUrl: cloudinaryResponse.secure_url,
+        storageUrl: publicUrl,
         tags: tagsArray.length
           ? {
               connectOrCreate: tagsArray.map((tagName: string) => ({
@@ -148,11 +174,11 @@ export const uploadDocument = async (
             }
           : undefined,
       },
-      include: { tags: true }, // return associated tags
+      include: { tags: true },
     });
 
     res.status(201).json({
-      message: "Document uploaded successfully",
+      message: "✅ Document uploaded successfully",
       document: newDocument,
     });
   } catch (error) {
@@ -160,8 +186,7 @@ export const uploadDocument = async (
     res.status(500).json({ error: "Document upload failed." });
   }
 };
-
-//edit documents
+//edit documentsy
 export const updateDocument = async (
   req: Request,
   res: Response
@@ -190,14 +215,34 @@ export const updateDocument = async (
     }
 
     // ✅ Handle file update (if provided)
-    let updatedCloudinaryUrl = existingDoc.cloudinaryUrl;
+    let updatedStorageUrl = existingDoc.storageUrl;
     if (req.files && req.files.document) {
-      let documentFile = req.files.document;
+      let documentFile = req.files.document as UploadedFile;
       if (Array.isArray(documentFile)) {
         documentFile = documentFile[0];
       }
-      const cloudinaryResponse = await uploadToCloudinary(documentFile);
-      updatedCloudinaryUrl = cloudinaryResponse.secure_url;
+
+      const fileExt = documentFile.name.split(".").pop();
+      const filePath = `documents/${uuidv4()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("documents")
+        .upload(filePath, documentFile.data, {
+          contentType: documentFile.mimetype,
+          upsert: true, // 👈 allow overwrite if same filePath
+        });
+
+      if (uploadError) {
+        console.error("Supabase upload error:", uploadError.message);
+        res.status(500).json({ error: "Failed to upload document" });
+        return;
+      }
+
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from("documents").getPublicUrl(filePath);
+
+      updatedStorageUrl = publicUrl;
     }
 
     // ✅ Handle tags update
@@ -222,7 +267,7 @@ export const updateDocument = async (
           : existingDoc.publishedYear,
         publisher: publisher ?? existingDoc.publisher,
         referenceLink: referenceLink ?? existingDoc.referenceLink,
-        cloudinaryUrl: updatedCloudinaryUrl,
+        storageUrl: updatedStorageUrl,
         ...(tagsArray.length && {
           tags: {
             set: [], // disconnect old tags first
@@ -246,6 +291,35 @@ export const updateDocument = async (
   }
 };
 
+// ✅ Delete a document
+export const deleteDocument = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { id } = req.params;
+
+    // ✅ Check if document exists
+    const existingDoc = await prisma.document.findUnique({
+      where: { id: Number(id) },
+    });
+
+    if (!existingDoc) {
+      res.status(404).json({ error: "Document not found" });
+      return;
+    }
+
+    // ✅ Delete from Prisma
+    await prisma.document.delete({
+      where: { id: Number(id) },
+    });
+
+    res.status(200).json({ message: "Document deleted successfully" });
+  } catch (error) {
+    console.error("Delete failed:", error);
+    res.status(500).json({ error: "Document deletion failed." });
+  }
+};
 
 // Optional: for displaying suggested tags
 export const getTagSuggestions = async (_req: Request, res: Response) => {
