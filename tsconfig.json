@@ -5,7 +5,8 @@
     "outDir": "./dist",
     "rootDir": ".", // Cambia rootDir a la raíz del proyecto para incluir todos los archivos fuente
     "strict": true,
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
   },
   "exclude": [
     "src/generated"

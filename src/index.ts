@@ -10,6 +10,7 @@ import adminRoutes from "./routes/adminRoutes";
 import prisma from './config/database';
 import { FRONTEND_URL } from './config/config';
 import { errorHandler } from './utils/errors';
+import translationRoutes from "./routes/translationRoutes";
 
 dotenv.config();
 
@@ -42,6 +43,8 @@ app.use(morgan("dev"));
 // Routes
 app.use("/api/documents", documentRoutes);
 app.use('/api/admin', adminRoutes);
+app.use("/api/translations", translationRoutes);
+
 
 
 // Test route

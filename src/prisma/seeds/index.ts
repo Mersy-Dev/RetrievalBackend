@@ -1,7 +1,7 @@
-// prisma/seed/index.ts
 import prisma from "../../config/database";
 import { seedDocuments } from "./documents";
-import { seedAdminUsers } from "./adminuser"; // Include admin user seeding
+import { seedAdminUsers } from "./adminuser";
+import { seedTranslations } from "./translation"; // ✅ add this
 
 async function main() {
   console.log("🌱 Seeding database...");
@@ -14,6 +14,10 @@ async function main() {
   console.log("📄 Seeding documents...");
   await seedDocuments();
 
+  // Seed translations
+  console.log("🌍 Seeding translations...");
+  await seedTranslations();
+
   console.log("✅ Seeding complete.");
 }
 
@@ -25,3 +29,4 @@ main()
   .finally(async () => {
     await prisma.$disconnect();
   });
+

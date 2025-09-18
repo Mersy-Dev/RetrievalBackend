@@ -1,16 +1,19 @@
 import { Request, Response } from "express";
 import { PrismaClient } from "../generated/client";
 import { supabase } from "../utils/supabaseClient"; // 👈 we'll create this
-import { UploadedFile } from "express-fileupload";
+import fileUpload, { UploadedFile } from "express-fileupload";
 import { v4 as uuidv4 } from "uuid";
+import pdfParse from "pdf-parse";
 
 const prisma = new PrismaClient();
 
 // Get a single document by ID
 // Get a single document by ID
 
-
-export const getSingleDocument = async (req: Request, res: Response): Promise<void> => {
+export const getSingleDocument = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     const { id } = req.params;
 
@@ -32,9 +35,10 @@ export const getSingleDocument = async (req: Request, res: Response): Promise<vo
 
     // ✅ Generate signed URL for private file
     let signedUrl: string | null = null;
-    const { data: signedUrlData, error: signedUrlError } = await supabase.storage
-      .from("documents")
-      .createSignedUrl(document.storageUrl, 60 * 60); // 1 hour expiry
+    const { data: signedUrlData, error: signedUrlError } =
+      await supabase.storage
+        .from("documents")
+        .createSignedUrl(document.storageUrl, 60 * 60); // 1 hour expiry
 
     if (signedUrlError) {
       console.error("Supabase signed URL error:", signedUrlError.message);
@@ -111,7 +115,6 @@ export const searchDocuments = async (
 };
 
 // /api/documents/upload
-
 export const uploadDocument = async (
   req: Request,
   res: Response
@@ -143,7 +146,11 @@ export const uploadDocument = async (
       if (Array.isArray(tags)) {
         tagsArray = tags;
       } else if (typeof tags === "string") {
-        tagsArray = tags.split(",").map((t) => t.trim());
+        try {
+          tagsArray = JSON.parse(tags); // frontend sends JSON.stringify(selectedTags)
+        } catch {
+          tagsArray = tags.split(",").map((t) => t.trim());
+        }
       }
     }
 
@@ -156,7 +163,7 @@ export const uploadDocument = async (
     // ✅ Upload file to Supabase Storage
     const fileExt = documentFile.name.split(".").pop();
     const uniqueFileName = `${uuidv4()}.${fileExt}`;
-    const filePath = `uploads/${uniqueFileName}`; // folder inside bucket
+    const filePath = `uploads/${uniqueFileName}`;
 
     const { error: uploadError } = await supabase.storage
       .from("documents")
@@ -171,14 +178,37 @@ export const uploadDocument = async (
       return;
     }
 
-    // ✅ Calculate file size (MB)
+    // ✅ File size in MB
     const fileSizeInMB = documentFile.size / (1024 * 1024);
 
-    // (Optional) Extract pages + reading time here with pdf-parse
-    const pages = null; // placeholder
-    const estimatedReadingTime = null;
+    // ✅ Extract pages + reading time (PDF only)
+    let pages: number | null = null;
+    let estimatedReadingTime: number | null = null;
 
-    // ✅ Save metadata to DB (without signedUrl)
+    if (documentFile.mimetype === "application/pdf") {
+      try {
+        const pdfData = await pdfParse(documentFile.data);
+        pages = pdfData.numpages;
+
+        const text = pdfData.text || "";
+        const wordCount = text.split(/\s+/).length;
+        estimatedReadingTime = Math.ceil(wordCount / 200); // avg 200 wpm
+      } catch (err) {
+        console.warn("⚠️ Failed to parse PDF:", err);
+      }
+    }
+
+    // ✅ Generate signed URL (valid for 1 hour)
+    const { data: signedUrlData, error: signedUrlError } =
+      await supabase.storage
+        .from("documents")
+        .createSignedUrl(filePath, 60 * 60);
+
+    if (signedUrlError) {
+      console.warn("⚠️ Could not generate signed URL:", signedUrlError.message);
+    }
+
+    // ✅ Save document to DB
     const newDocument = await prisma.document.create({
       data: {
         title,
@@ -188,6 +218,7 @@ export const uploadDocument = async (
         publisher: publisher || null,
         referenceLink: referenceLink || null,
         storageUrl: filePath,
+        signedUrl: signedUrlData?.signedUrl || null,
         fileSize: fileSizeInMB,
         pages,
         readingTime: estimatedReadingTime,
@@ -212,9 +243,6 @@ export const uploadDocument = async (
     res.status(500).json({ error: "Document upload failed." });
   }
 };
-
-
-
 
 //edit documents
 export const updateDocument = async (
@@ -337,7 +365,6 @@ export const updateDocument = async (
     res.status(500).json({ error: "Document update failed." });
   }
 };
-
 
 // ✅ Delete a document
 export const deleteDocument = async (

@@ -1,0 +1,240 @@
+{
+  "Navbar": {
+    "malariaWorld": "Malaria World",
+    "MalariaHome": "Home",
+    "resources": "Resources",
+    "information": "Information",
+    "about": "About Us",
+    "contact": "Contact",
+    "dashboard": "Dashboard"
+  },
+  "home": {
+    "hero": {
+      "title": "Welcome to Malaria World",
+      "imageAlt": "Overview of the Malaria Information Retrieval System",
+      "description": "Your one-stop destination for all things related to malaria. Stay informed, get involved, and help us fight malaria together.",
+      "cta": "Join the Fight Against Malaria",
+      "cta2": "Explore the System",
+      "feature1": "Access comprehensive malaria data",
+      "feature2": "Get real-time updates on outbreaks",
+      "feature3": "Learn about prevention and treatment",
+      "feature4": "Engage with community health workers",
+      "rightTitle": "Malaria Intelligence Assistant",
+      "rightDescription": "Search for symptoms, treatments, or trusted malaria-related insights.",
+      "symButton": "🦠 Symptoms",
+      "treatButton": "💊 Treatments",
+      "outButton": "📊 Outbreaks",
+      "researchButton": "📚 Research",
+      "awarenessButton": "📢 Awareness",
+      "preventionButton": "🛡️ Prevention",
+      "recentSearch": "Recent Searches",
+      "commonSym": " Common malaria symptoms in Nigeria",
+      "malPrev": "Malaria prevention tips for families",
+      "bestTreat": "Best treatments for malaria in Nigeria",
+      "adInsight": "📊 Advanced Insights",
+      "uploadCase": "📤 Upload Case",
+      "retrieveInfo": "🔍 Retrieve Info"
+    },
+    "malBody": {
+      "awareness": "Awareness",
+      "title": "Built-in resources for malaria prevention and control",
+      "awarenessDescription": "Access reliable malaria prevention strategies and verified tools used by health workers and organizations globally.",
+      "description": "Explore the latest research, news, and resources related to malaria. Stay updated with our comprehensive database.",
+      "keyword1": "🛏️ Bed Nets",
+      "keyword2": "💉 Malaria Vaccines",
+      "keyword3": "🦟 Mosquito Repellent",
+      "keyword4": "🌍 WHO Guidelines",
+      "keyword5": "📊 Case Surveillance",
+      "keyword6": "🚫 Stagnant Water Control",
+      "org1": { "name": "World Health Org", "icon": "🌐" },
+      "org2": { "name": "CDC (Nigeria)", "icon": "🧪" },
+      "org3": { "name": "UNICEF", "icon": "🧒" },
+      "org4": { "name": "Red Cross", "icon": "➕" },
+      "org5": { "name": "Africa CDC", "icon": "🌍" },
+      "org6": { "name": "Gavi", "icon": "💉" }
+    },
+    "features": {
+      "title": "Explore Our Health Features",
+      "items": [
+        {
+          "title": "Malaria Prevention",
+          "description": "Learn key strategies to protect yourself and your family from malaria.",
+          "cta": "Explore prevention tips"
+        },
+        {
+          "title": "Treatment",
+          "description": "Get information on effective and verified treatment options.",
+          "cta": "View treatments"
+        },
+        {
+          "title": "Symptoms",
+          "description": "Understand early signs and symptoms of malaria for faster action.",
+          "cta": "Check symptoms"
+        },
+        {
+          "title": "Fast First Aid",
+          "description": "Know the immediate steps to take during a malaria emergency.",
+          "cta": "Learn first aid"
+        },
+        {
+          "title": "Outbreak Alerts",
+          "description": "Stay up to date with real-time malaria outbreak notifications.",
+          "cta": "View alerts"
+        },
+        {
+          "title": "Community Resources",
+          "description": "Access verified tools, guides, and contacts from health workers.",
+          "cta": "Browse resources"
+        }
+      ]
+    },
+    "faq": {
+      "title": "FAQs about Malaria Intelligence Assistant",
+      "subtitle": "Everything you need to know about how the system works and how to get the best from it.",
+      "items": [
+        {
+          "question": "What is the Malaria Intelligence Assistant?",
+          "answer": "The Malaria Intelligence Assistant is an AI-powered platform designed to help users search, explore, and retrieve detailed insights about malaria-related topics including symptoms, treatments, outbreaks, and research studies."
+        },
+        {
+          "question": "How do I use the assistant?",
+          "answer": "Simply enter your question or keywords in the search bar, and the system will return curated results from research papers, medical databases, and trusted health sources."
+        },
+        {
+          "question": "Can I trust the results?",
+          "answer": "Yes. The assistant retrieves data from verified sources such as WHO, PubMed, and malaria-specific case reports. It is built to prioritize credible, human-reviewed information."
+        },
+        {
+          "question": "Who can use this assistant?",
+          "answer": "It is designed for students, researchers, health workers, and the general public interested in understanding malaria-related information more deeply."
+        },
+        {
+          "question": "Is this system able to detect malaria symptoms?",
+          "answer": "The system cannot diagnose diseases but can provide information about common symptoms, trends, and research related to malaria. Always consult a healthcare provider for medical concerns."
+        }
+      ]
+    }
+  },
+  "system": {},
+  "about": {
+    "AboutSection": {
+      "imageAlt": "Overview of the Malaria Information Retrieval System",
+      "title": "About Malaria",
+      "introMala": "Malaria is a serious but preventable disease caused by Plasmodium parasites and transmitted to humans through the bites of infected female Anopheles mosquitoes. It remains a major public health concern in many tropical and subtropical regions, including Nigeria. With early diagnosis, prompt treatment, and effective prevention measures, malaria can be controlled and lives can be saved.",
+      "description": "This system is designed to provide users with easy access to malaria-related information in both English and a local language. It enables keyword-based search through a collection of academic, clinical, and public health resources. Built using a bilingual information retrieval model, the platform empowers users—researchers, students, and health workers—to find relevant content efficiently and in their preferred language."
+    }
+  },
+    "Symptoms": {
+      "title": "Symptoms of Malaria",
+      "intro": "Malaria presents with a variety of symptoms that may appear within 10–15 days of being bitten by an infected mosquito.",
+      "commonSymptoms": "Common Symptoms",
+
+      "feverTitle": "High Fever",
+      "feverDesc": "A sudden rise in body temperature, often recurring in cycles.",
+      "feverDetails": "High fever is the hallmark symptom of malaria. The fever often comes in cycles, accompanied by chills and sweating. It results from the parasite maturing inside red blood cells and causing their rupture.",
+
+      "sweatingTitle": "Excessive Sweating",
+      "sweatingDesc": "Profuse sweating, especially after fever episodes.",
+      "sweatingDetails": "Sweating typically follows the fever and chills stage. This is the body’s attempt to cool itself down and maintain normal temperature after sudden spikes.",
+
+      "fatigueTitle": "Severe Fatigue",
+      "fatigueDesc": "Extreme tiredness, weakness, and lack of energy.",
+      "fatigueDetails": "Fatigue results from the destruction of red blood cells and the energy demands of the immune system fighting the infection. Patients often feel drained even with minimal activity.",
+
+      "chillsTitle": "Chills & Shivering",
+      "chillsDesc": "Sudden cold sensations and shaking chills.",
+      "chillsDetails": "Chills usually appear before fever spikes. They are caused by the parasite bursting out of red blood cells and triggering the body’s inflammatory response.",
+
+      "anemiaTitle": "Anemia",
+      "anemiaDesc": "Paleness, dizziness, and weakness due to loss of red blood cells.",
+      "anemiaDetails": "Anemia in malaria patients is a result of massive destruction of red blood cells by parasites. Severe anemia can lead to complications, especially in children and pregnant women.",
+
+      "otherTitle": "Other Symptoms",
+      "otherDesc": "Headache, nausea, vomiting, diarrhea, and muscle pains.",
+      "otherDetails": "Other associated symptoms include abdominal discomfort, loss of appetite, nausea, and muscle aches. Severe cases can involve neurological symptoms such as confusion or seizures.",
+
+      "detailsTitle": "Detailed Explanation",
+      "details1": "The first signs of malaria are usually fever, headache, and chills. These symptoms may be mild and difficult to recognize as malaria.",
+      "details2": "If not treated within 24 hours, malaria can progress to severe illness and often death. Severe malaria is caused by Plasmodium falciparum and can lead to complications like breathing problems, organ failure, and convulsions.",
+      "details3": "Early diagnosis and treatment are crucial to prevent complications. Always seek medical advice if you experience these symptoms after visiting or living in malaria-prone areas."
+    },
+    "Prevention": {
+    "title": "Malaria Prevention",
+    "intro": "Protecting yourself and your community from malaria involves simple but powerful preventive measures. Explore the recommended strategies below.",
+    "netsTitle": "Use Mosquito Nets",
+    "netsDesc": "Sleeping under insecticide-treated mosquito nets significantly reduces malaria risk, especially for children and pregnant women.",
+    "breedingTitle": "Eliminate Breeding Sites",
+    "breedingDesc": "Prevent mosquitoes from multiplying by removing stagnant water in buckets, flower pots, and discarded tires.",
+    "clothingTitle": "Wear Protective Clothing",
+    "clothingDesc": "Long-sleeved shirts and pants help reduce mosquito bites, especially during evening hours when mosquitoes are most active.",
+    "indoorTitle": "Indoor Protection",
+    "indoorDesc": "Use indoor spraying with insecticides and install window screens to keep mosquitoes out of your home.",
+    "ctaTitle": "Take Action Today",
+    "ctaDesc": "Prevention starts with small steps. Encourage your family and community to adopt these protective measures.",
+    "ctaButton": "Learn More"
+  },
+  "Treatment": {
+    "title": "Malaria Treatment",
+    "intro": "Proper diagnosis and timely treatment are essential to cure malaria and prevent complications.",
+    "diagnosis": {
+      "title": "Diagnosis",
+      "description": "Malaria should be confirmed with a blood test to identify the parasite before starting treatment."
+    },
+    "medications": {
+      "title": "Medications",
+      "item1": "Artemisinin-based Combination Therapy (ACT) for uncomplicated malaria",
+      "item2": "Chloroquine for chloroquine-sensitive cases",
+      "item3": "Primaquine for eliminating dormant liver stages"
+    },
+    "severe": {
+      "title": "Treatment of Severe Malaria",
+      "description": "Hospitalization is required, with intravenous medications such as artesunate and supportive care."
+    },
+    "homeCare": {
+      "title": "Home Care and Recovery",
+      "item1": "Take prescribed medication as directed",
+      "item2": "Stay hydrated and rest",
+      "item3": "Monitor symptoms and seek medical help if they worsen"
+    }
+  },
+   "EducationalMaterials": {
+    "title": "Educational Materials",
+    "intro": "Explore documents, guides, and infographics to learn more about malaria prevention, treatment, and recovery.",
+    "searchPlaceholder": "Search materials...",
+    "view": "View",
+    "download": "Download",
+    "noResults": "No materials found.",
+    "materials": {
+      "1": {
+        "title": "Malaria Prevention Guide",
+        "description": "Step-by-step information on preventing malaria in high-risk areas."
+      },
+      "2": {
+        "title": "Treatment Protocol Handbook",
+        "description": "Official handbook for healthcare providers on malaria treatment."
+      },
+      "3": {
+        "title": "Educational Infographic",
+        "description": "Visual learning material on recognizing malaria symptoms."
+      }
+    }
+  },
+  "FAQs": {
+    "title": "Frequently Asked Questions",
+    "intro": "Find answers to the most common questions about malaria, its prevention, and treatment.",
+    "items": {
+      "1": {
+        "q": "What causes malaria?",
+        "a": "Malaria is caused by parasites transmitted to humans through the bites of infected mosquitoes."
+      },
+      "2": {
+        "q": "Can malaria be cured?",
+        "a": "Yes. With the right diagnosis and treatment, malaria can be completely cured. Early treatment is essential."
+      },
+      "3": {
+        "q": "How can I protect myself from malaria?",
+        "a": "You can protect yourself by sleeping under insecticide-treated nets, taking preventive medications if recommended, and reducing mosquito exposure."
+      }
+    }
+  }
+}
