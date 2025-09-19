@@ -6,7 +6,11 @@
     "information": "Information",
     "about": "About Us",
     "contact": "Contact",
-    "dashboard": "Dashboard"
+    "dashboard": "Dashboard",
+    "symptoms": "Symptoms",
+    "prevention": "Prevention",
+    "treatment": "Treatment",
+    "educationalMaterials": "Educational Materials" 
   },
   "home": {
     "hero": {

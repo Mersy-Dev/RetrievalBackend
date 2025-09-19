@@ -6,7 +6,7 @@ import yoJson from "./yo.json";
 
 // const prisma = new PrismaClient();
 
-// ✅ helper to flatten nested JSON into dot.notation keys
+//helper to flatten nested JSON into dot.notation keys
 function flattenJSON(obj: any, prefix = ""): Record<string, string> {
   let result: Record<string, string> = {};
   for (const key in obj) {
