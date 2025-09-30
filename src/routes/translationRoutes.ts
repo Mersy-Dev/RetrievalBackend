@@ -1,7 +1,10 @@
 import { Router } from "express";
-import { createTranslation, deleteTranslation, getTranslations, updateTranslation } from "../controllers/translationController";
+import { createTranslation, deleteTranslation, documentTranslation, getTranslations, updateTranslation } from "../controllers/translationController";
 
 const router = Router();
+
+
+router.get("/document/:id", documentTranslation);
 
 router.get("/:lang", getTranslations);
 router.post("/", createTranslation);      // POST /api/translations

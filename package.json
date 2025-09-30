@@ -13,6 +13,7 @@
     "seed": "ts-node src/prisma/seeds/index.ts"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@prisma/client": "^6.9.0",
     "@supabase/supabase-js": "^2.57.4",
     "bcrypt": "^6.0.0",
@@ -31,6 +32,7 @@
     "mysql2": "^3.14.1",
     "nodemailer": "^7.0.3",
     "pdf-parse": "^1.1.1",
+    "pdfkit": "^0.17.2",
     "uuid": "^13.0.0",
     "zod": "^3.25.56"
   },
@@ -48,6 +50,7 @@
     "@types/node": "^22.15.30",
     "@types/nodemailer": "^6.4.17",
     "@types/pdf-parse": "^1.1.5",
+    "@types/pdfkit": "^0.17.3",
     "nodemon": "^3.1.10",
     "prisma": "^6.9.0",
     "ts-node": "^10.9.2",

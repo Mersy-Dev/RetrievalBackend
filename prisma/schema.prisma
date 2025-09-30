@@ -35,12 +35,16 @@ model Document {
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
 
+
   tags          Tag[]
   feedbacks     Feedback[]
 
   // ✅ Proper self-relation for related documents
   relatedDocs       Document[] @relation("RelatedDocuments")
   relatedByDocuments Document[] @relation("RelatedDocuments")
+
+  translations TranslationCache[]
+
 }
 
 
@@ -73,3 +77,12 @@ model Translation {
   @@unique([key, locale]) // each key-locale pair must be unique
 }
 
+model TranslationCache {
+  id          Int      @id @default(autoincrement())
+  documentId  Int
+  language    String   // e.g. "yo" for Yoruba
+  translated  String
+  createdAt   DateTime @default(now())
+
+  document Document @relation(fields: [documentId], references: [id])
+}
