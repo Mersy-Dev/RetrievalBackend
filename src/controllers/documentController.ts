@@ -4,6 +4,8 @@ import { supabase } from "../utils/supabaseClient"; // 👈 we'll create this
 import fileUpload, { UploadedFile } from "express-fileupload";
 import { v4 as uuidv4 } from "uuid";
 import pdfParse from "pdf-parse";
+import { storage } from "../utils/appwrite"; // from the setup file above
+import mammoth from "mammoth"; // for docx
 
 const prisma = new PrismaClient();
 
@@ -33,19 +35,15 @@ export const getSingleDocument = async (
       return;
     }
 
-    // ✅ Generate signed URL for private file
-    let signedUrl: string | null = null;
-    const { data: signedUrlData, error: signedUrlError } =
-      await supabase.storage
-        .from("documents")
-        .createSignedUrl(document.storageUrl, 60 * 60); // 1 hour expiry
+    // ✅ Generate Appwrite file view URL (public bucket only)
+    const bucketId = process.env.APPWRITE_BUCKET_ID!;
+    const projectId = process.env.APPWRITE_PROJECT_ID!;
+    const fileId = document.storageUrl; // 👈 make sure you saved Appwrite fileId here
 
-    if (signedUrlError) {
-      console.error("Supabase signed URL error:", signedUrlError.message);
-      // Do not block sending the document; just omit signedUrl
-    } else {
-      signedUrl = signedUrlData?.signedUrl ?? null;
-    }
+    const endpoint =
+      process.env.APPWRITE_ENDPOINT || "https://fra.cloud.appwrite.io/v1";
+
+    const signedUrl = `${endpoint}/storage/buckets/${bucketId}/files/${fileId}/view?project=${projectId}`;
 
     // ✅ Return complete document
     res.status(200).json({
@@ -57,7 +55,6 @@ export const getSingleDocument = async (
     res.status(500).json({ error: "Failed to fetch document." });
   }
 };
-
 // Get all documents
 export const getAllDocuments = async (
   req: Request,
@@ -147,7 +144,7 @@ export const uploadDocument = async (
         tagsArray = tags;
       } else if (typeof tags === "string") {
         try {
-          tagsArray = JSON.parse(tags); // frontend sends JSON.stringify(selectedTags)
+          tagsArray = JSON.parse(tags);
         } catch {
           tagsArray = tags.split(",").map((t) => t.trim());
         }
@@ -160,55 +157,77 @@ export const uploadDocument = async (
       mimetype: documentFile.mimetype,
     });
 
-    // ✅ Upload file to Supabase Storage
-    const fileExt = documentFile.name.split(".").pop();
-    const uniqueFileName = `${uuidv4()}.${fileExt}`;
-    const filePath = `uploads/${uniqueFileName}`;
+    const bucketId = process.env.APPWRITE_BUCKET_ID as string;
 
-    const { error: uploadError } = await supabase.storage
-      .from("documents")
-      .upload(filePath, documentFile.data, {
-        contentType: documentFile.mimetype,
-        upsert: true,
-      });
+    const fileForUpload = new File(
+      [new Uint8Array(documentFile.data)],
+      documentFile.name,
+      { type: documentFile.mimetype }
+    );
 
-    if (uploadError) {
-      console.error("Supabase upload error:", uploadError.message);
-      res.status(500).json({ error: "Failed to upload to Supabase" });
-      return;
-    }
+    const uploadedFile = await storage.createFile(
+      bucketId,
+      "unique()",
+      fileForUpload
+    );
 
     // ✅ File size in MB
     const fileSizeInMB = documentFile.size / (1024 * 1024);
 
-    // ✅ Extract pages + reading time (PDF only)
+    // ✅ Extract pages + reading time depending on file type
     let pages: number | null = null;
     let estimatedReadingTime: number | null = null;
 
     if (documentFile.mimetype === "application/pdf") {
+      // PDF
       try {
         const pdfData = await pdfParse(documentFile.data);
         pages = pdfData.numpages;
 
         const text = pdfData.text || "";
         const wordCount = text.split(/\s+/).length;
-        estimatedReadingTime = Math.ceil(wordCount / 200); // avg 200 wpm
+        estimatedReadingTime = Math.ceil(wordCount / 200);
       } catch (err) {
         console.warn("⚠️ Failed to parse PDF:", err);
       }
+    } else if (
+      documentFile.mimetype ===
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    ) {
+      // DOCX
+      try {
+        const result = await mammoth.extractRawText({
+          buffer: documentFile.data,
+        });
+        const text = result.value || "";
+        const wordCount = text.split(/\s+/).length;
+        estimatedReadingTime = Math.ceil(wordCount / 200);
+        // Approx pages: ~500 words per page
+        pages = Math.ceil(wordCount / 500);
+      } catch (err) {
+        console.warn("⚠️ Failed to parse DOCX:", err);
+      }
+    } else if (documentFile.mimetype === "text/plain") {
+      // TXT
+      try {
+        const text = documentFile.data.toString("utf-8");
+        const wordCount = text.split(/\s+/).length;
+        estimatedReadingTime = Math.ceil(wordCount / 200);
+        pages = Math.ceil(wordCount / 500);
+      } catch (err) {
+        console.warn("⚠️ Failed to parse TXT:", err);
+      }
+    } else {
+      console.log(
+        "⚠️ Unsupported mimetype for parsing:",
+        documentFile.mimetype
+      );
     }
 
-    // ✅ Generate signed URL (valid for 1 hour)
-    const { data: signedUrlData, error: signedUrlError } =
-      await supabase.storage
-        .from("documents")
-        .createSignedUrl(filePath, 60 * 60);
+    // ✅ Generate a preview URL
+    const viewUrl = `${process.env.APPWRITE_ENDPOINT}/storage/buckets/${bucketId}/files/${uploadedFile.$id}/view?project=${process.env.APPWRITE_PROJECT_ID}`;
 
-    if (signedUrlError) {
-      console.warn("⚠️ Could not generate signed URL:", signedUrlError.message);
-    }
-
-    // ✅ Save document to DB
+    // ✅ Save document metadata to DB
     const newDocument = await prisma.document.create({
       data: {
         title,
@@ -217,8 +236,8 @@ export const uploadDocument = async (
         publishedYear: publishedYear ? parseInt(publishedYear, 10) : 0,
         publisher: publisher || null,
         referenceLink: referenceLink || null,
-        storageUrl: filePath,
-        signedUrl: signedUrlData?.signedUrl || null,
+        storageUrl: uploadedFile.$id, // Appwrite file ID
+        signedUrl: viewUrl,
         fileSize: fileSizeInMB,
         pages,
         readingTime: estimatedReadingTime,

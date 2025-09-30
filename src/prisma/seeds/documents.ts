@@ -44,13 +44,14 @@ export const seedDocuments = async () => {
     data: [
       {
         title: "Common Symptoms of Malaria in Children",
-        description: "Overview of early warning signs in children under age 12...",
+        description:
+          "Overview of early warning signs in children under age 12...",
         author: "Dr. Amina Yusuf",
         publishedYear: 2023,
         publisher: "University of Ibadan Press",
         referenceLink: "https://example.com/malaria-symptoms",
         storageUrl:
-          "https://your-supabase-url.supabase.co/storage/v1/object/public/documents/malaria-symptoms.pdf",
+          "https://your-appwrite-endpoint/v1/storage/buckets/your-bucket-id/files/file-id-1/view?project=your-project-id",
         pages: 10,
         readingTime: 12,
         fileSize: 1.8,
@@ -63,7 +64,7 @@ export const seedDocuments = async () => {
         publisher: "WHO",
         referenceLink: "https://www.who.int/guidelines/malaria",
         storageUrl:
-          "https://your-supabase-url.supabase.co/storage/v1/object/public/documents/who-malaria-guidelines.pdf",
+          "https://your-appwrite-endpoint/v1/storage/buckets/your-bucket-id/files/file-id-2/view?project=your-project-id",
         pages: 40,
         readingTime: 45,
         fileSize: 5.6,
@@ -76,7 +77,7 @@ export const seedDocuments = async () => {
         publisher: "African Medical Journal",
         referenceLink: null,
         storageUrl:
-          "https://your-supabase-url.supabase.co/storage/v1/object/public/documents/west-africa-outbreak.pdf",
+          "https://your-appwrite-endpoint/v1/storage/buckets/your-bucket-id/files/file-id-3/view?project=your-project-id",
         pages: 18,
         readingTime: 20,
         fileSize: 3.2,
@@ -90,20 +91,21 @@ export const seedDocuments = async () => {
         publisher: "Public Health Nigeria",
         referenceLink: "https://example.com/prevent-malaria",
         storageUrl:
-          "https://your-supabase-url.supabase.co/storage/v1/object/public/documents/malaria-prevention.pdf",
+          "https://your-appwrite-endpoint/v1/storage/buckets/your-bucket-id/files/file-id-4/view?project=your-project-id",
         pages: 15,
         readingTime: 18,
         fileSize: 2.1,
       },
       {
         title: "Case Studies on Severe Malaria in Adults",
-        description: "Analysis of severe malaria cases reported in hospitals...",
+        description:
+          "Analysis of severe malaria cases reported in hospitals...",
         author: "Dr. Samuel Okoro",
         publishedYear: 2021,
         publisher: "Nigerian Journal of Medicine",
         referenceLink: "https://example.com/severe-malaria-cases",
         storageUrl:
-          "https://your-supabase-url.supabase.co/storage/v1/object/public/documents/severe-malaria.pdf",
+          "https://your-appwrite-endpoint/v1/storage/buckets/your-bucket-id/files/file-id-5/view?project=your-project-id",
         pages: 22,
         readingTime: 25,
         fileSize: 2.7,
@@ -117,7 +119,7 @@ export const seedDocuments = async () => {
         publisher: "West African Research Institute",
         referenceLink: "https://example.com/malaria-research",
         storageUrl:
-          "https://your-supabase-url.supabase.co/storage/v1/object/public/documents/malaria-research.pdf",
+          "https://your-appwrite-endpoint/v1/storage/buckets/your-bucket-id/files/file-id-6/view?project=your-project-id",
         pages: 30,
         readingTime: 35,
         fileSize: 4.5,
@@ -135,27 +137,37 @@ export const seedDocuments = async () => {
 
   await prisma.document.update({
     where: { id: documents[1].id },
-    data: { tags: { connect: [{ id: malariaTag.id }, { id: treatmentTag.id }] } },
+    data: {
+      tags: { connect: [{ id: malariaTag.id }, { id: treatmentTag.id }] },
+    },
   });
 
   await prisma.document.update({
     where: { id: documents[2].id },
-    data: { tags: { connect: [{ id: malariaTag.id }, { id: outbreakTag.id }] } },
+    data: {
+      tags: { connect: [{ id: malariaTag.id }, { id: outbreakTag.id }] },
+    },
   });
 
   await prisma.document.update({
     where: { id: documents[3].id },
-    data: { tags: { connect: [{ id: malariaTag.id }, { id: preventionTag.id }] } },
+    data: {
+      tags: { connect: [{ id: malariaTag.id }, { id: preventionTag.id }] },
+    },
   });
 
   await prisma.document.update({
     where: { id: documents[4].id },
-    data: { tags: { connect: [{ id: malariaTag.id }, { id: caseStudyTag.id }] } },
+    data: {
+      tags: { connect: [{ id: malariaTag.id }, { id: caseStudyTag.id }] },
+    },
   });
 
   await prisma.document.update({
     where: { id: documents[5].id },
-    data: { tags: { connect: [{ id: malariaTag.id }, { id: researchTag.id }] } },
+    data: {
+      tags: { connect: [{ id: malariaTag.id }, { id: researchTag.id }] },
+    },
   });
 
   // Step 4: Add Related Documents
