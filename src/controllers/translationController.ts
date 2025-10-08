@@ -1,51 +1,83 @@
 // server/controllers/translationController.ts
-import { Request, Response } from "express";
 import { PrismaClient } from "../generated/client";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { Request, Response } from "express";
+import axios from "axios";
+import pdfParse from "pdf-parse";
+import path from "path";
 import PDFDocument from "pdfkit";
-
-const geminiApiKey = process.env.GEMINI_API_KEY;
-if (!geminiApiKey) {
-  throw new Error("GEMINI_API_KEY environment variable is not set.");
-}
-const genAI = new GoogleGenerativeAI(geminiApiKey as string);
+import { pipeline, env } from "@xenova/transformers";
+env.allowLocalModels = true;
+env.allowRemoteModels = true;
+// Set Hugging Face token via environment variable, not env object
+process.env.HF_TOKEN = process.env.HF_TOKEN;
 
 const prisma = new PrismaClient();
+
+declare module "@xenova/transformers" {
+  interface TranslationOptions {
+    src_lang?: string;
+    tgt_lang?: string;
+  }
+}
 
 export const documentTranslation = async (
   req: Request,
   res: Response
 ): Promise<void> => {
   try {
-    const { id } = req.params; // doc ID from route param
+    const { id } = req.params;
     let { lang = "yo", download = "false" } = req.query;
 
     if (Array.isArray(lang)) lang = lang[0];
     if (Array.isArray(download)) download = download[0];
 
-    // 1. Get document from DB
+    // 1️⃣ Get document record
     const doc = await prisma.document.findUnique({
       where: { id: Number(id) },
     });
-
     if (!doc) {
       res.status(404).json({ error: "Document not found" });
       return;
     }
 
-    // 2. Check translation cache
+    if (!doc.signedUrl) {
+      res.status(400).json({ error: "Document file not available" });
+      return;
+    }
+
+    // 2️⃣ Check cache
     let translation = await prisma.translationCache.findFirst({
       where: { documentId: Number(id), language: String(lang) },
     });
 
     if (!translation) {
-      // 3. Translate using Gemini
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-      const prompt = `Translate the following English text to ${lang}:\n\n${doc.description}`;
-      const result = await model.generateContent(prompt);
-      const translatedText = result.response.text();
+      console.log("📄 Downloading file from Appwrite...");
+      const response = await axios.get(doc.signedUrl, {
+        responseType: "arraybuffer",
+      });
+      const pdfBuffer = Buffer.from(response.data, "binary");
 
-      // 4. Save translation to cache
+      console.log("📘 Extracting text from PDF...");
+      const pdfData = await pdfParse(pdfBuffer);
+      const extractedText = pdfData.text;
+
+      console.log("🌍 Translating with Hugging Face model...");
+      const modelName = "Xenova/nllb-200-distilled-600M"; // fallback example: English → French
+
+      const translator = await pipeline("translation", modelName);
+      const result = await translator(
+        extractedText,
+        {
+          src_lang: "eng_Latn",
+          tgt_lang: lang === "yo" ? "yor_Latn" : "fra_Latn", // Yoruba or French
+        } as any // Cast to any to bypass type error
+      );
+
+      const translatedText = Array.isArray(result)
+        ? result.map((r: any) => r.translation_text).join(" ")
+        : (result as any).translation_text;
+
+      // 💾 Cache translation
       translation = await prisma.translationCache.create({
         data: {
           documentId: Number(id),
@@ -55,27 +87,38 @@ export const documentTranslation = async (
       });
     }
 
-    // 5. If download requested, stream PDF
+    // 3️⃣ Return translated PDF if requested
     if (download === "true") {
       res.setHeader("Content-Type", "application/pdf");
       res.setHeader(
         "Content-Disposition",
-        `attachment; filename=doc-${id}-${lang}.pdf`
+        `attachment; filename=translated-${id}-${lang}.pdf`
       );
 
       const pdfDoc = new PDFDocument();
+
+      // ✅ Register Yoruba-compatible font
+      const fontPath = path.join(
+        __dirname,
+        "../../assets/fonts/static/NotoSans-Regular.ttf"
+      );
+      pdfDoc.registerFont("NotoSans", fontPath);
+
+      // 📝 Use the Unicode font
       pdfDoc.pipe(res);
-      pdfDoc.fontSize(16).text(translation.translated, { align: "left" });
+      pdfDoc.font("NotoSans").fontSize(12).text(translation.translated, {
+        align: "left",
+      });
       pdfDoc.end();
       return;
     }
 
-    // Otherwise, return JSON response
+    // 4️⃣ Return translation as JSON
     res.status(200).json({
       id: doc.id,
       title: doc.title,
-      translation: translation.translated,
       language: lang,
+      translation: translation.translated,
     });
   } catch (error) {
     console.error("❌ Error translating document:", error);
