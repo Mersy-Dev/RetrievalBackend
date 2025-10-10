@@ -12,49 +12,49 @@ const prisma = new PrismaClient();
 // Get a single document by ID
 // Get a single document by ID
 
-export const getSingleDocument = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
-  try {
-    const { id } = req.params;
+  export const getSingleDocument = async (
+    req: Request,
+    res: Response
+  ): Promise<void> => {
+    try {
+      const { id } = req.params;
 
-    // ✅ Fetch document with all related data
-    const document = await prisma.document.findUnique({
-      where: { id: Number(id) },
-      include: {
-        tags: true,
-        relatedDocs: true,
-        relatedByDocuments: true,
-        feedbacks: true,
-      },
-    });
+      // ✅ Fetch document with all related data
+      const document = await prisma.document.findUnique({
+        where: { id: Number(id) },
+        include: {
+          tags: true,
+          relatedDocs: true,
+          relatedByDocuments: true,
+          feedbacks: true,
+        },
+      });
 
-    if (!document) {
-      res.status(404).json({ error: "Document not found" });
-      return;
+      if (!document) {
+        res.status(404).json({ error: "Document not found" });
+        return;
+      }
+
+      // ✅ Generate Appwrite file view URL (public bucket only)
+      const bucketId = process.env.APPWRITE_BUCKET_ID!;
+      const projectId = process.env.APPWRITE_PROJECT_ID!;
+      const fileId = document.storageUrl; // 👈 make sure you saved Appwrite fileId here
+
+      const endpoint =
+        process.env.APPWRITE_ENDPOINT || "https://fra.cloud.appwrite.io/v1";
+
+      const signedUrl = `${endpoint}/storage/buckets/${bucketId}/files/${fileId}/view?project=${projectId}`;
+
+      // ✅ Return complete document
+      res.status(200).json({
+        ...document,
+        signedUrl,
+      });
+    } catch (error) {
+      console.error("Error fetching document:", error);
+      res.status(500).json({ error: "Failed to fetch document." });
     }
-
-    // ✅ Generate Appwrite file view URL (public bucket only)
-    const bucketId = process.env.APPWRITE_BUCKET_ID!;
-    const projectId = process.env.APPWRITE_PROJECT_ID!;
-    const fileId = document.storageUrl; // 👈 make sure you saved Appwrite fileId here
-
-    const endpoint =
-      process.env.APPWRITE_ENDPOINT || "https://fra.cloud.appwrite.io/v1";
-
-    const signedUrl = `${endpoint}/storage/buckets/${bucketId}/files/${fileId}/view?project=${projectId}`;
-
-    // ✅ Return complete document
-    res.status(200).json({
-      ...document,
-      signedUrl,
-    });
-  } catch (error) {
-    console.error("Error fetching document:", error);
-    res.status(500).json({ error: "Failed to fetch document." });
-  }
-};
+  };
 // Get all documents
 export const getAllDocuments = async (
   req: Request,

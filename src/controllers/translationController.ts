@@ -5,115 +5,143 @@ import axios from "axios";
 import pdfParse from "pdf-parse";
 import path from "path";
 import PDFDocument from "pdfkit";
-import { pipeline, env } from "@xenova/transformers";
-env.allowLocalModels = true;
-env.allowRemoteModels = true;
-// Set Hugging Face token via environment variable, not env object
-process.env.HF_TOKEN = process.env.HF_TOKEN;
+import fs from "fs";
+import { TranslationServiceClient } from "@google-cloud/translate";
 
 const prisma = new PrismaClient();
+const translationClient = new TranslationServiceClient();
 
-declare module "@xenova/transformers" {
-  interface TranslationOptions {
-    src_lang?: string;
-    tgt_lang?: string;
-  }
-}
-
-export const documentTranslation = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
+export const documentTranslation = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    let { lang = "yo", download = "false" } = req.query;
+    let lang = String(req.query.lang || "yo");
+    let download = String(req.query.download || "false");
 
-    if (Array.isArray(lang)) lang = lang[0];
-    if (Array.isArray(download)) download = download[0];
+    // 1️⃣ Fetch document
+    const doc = await prisma.document.findUnique({ where: { id: Number(id) } });
+    if (!doc) return void res.status(404).json({ error: "Document not found" });
+    if (!doc.signedUrl)
+      return void res.status(400).json({ error: "Document file not available" });
 
-    // 1️⃣ Get document record
-    const doc = await prisma.document.findUnique({
-      where: { id: Number(id) },
-    });
-    if (!doc) {
-      res.status(404).json({ error: "Document not found" });
-      return;
-    }
-
-    if (!doc.signedUrl) {
-      res.status(400).json({ error: "Document file not available" });
-      return;
-    }
-
-    // 2️⃣ Check cache
+    // 2️⃣ Check cached translation
     let translation = await prisma.translationCache.findFirst({
-      where: { documentId: Number(id), language: String(lang) },
+      where: { documentId: Number(id), language: lang },
     });
 
     if (!translation) {
-      console.log("📄 Downloading file from Appwrite...");
-      const response = await axios.get(doc.signedUrl, {
-        responseType: "arraybuffer",
-      });
+      console.log("📄 Downloading and reading original PDF...");
+      const response = await axios.get(doc.signedUrl, { responseType: "arraybuffer" });
       const pdfBuffer = Buffer.from(response.data, "binary");
 
-      console.log("📘 Extracting text from PDF...");
       const pdfData = await pdfParse(pdfBuffer);
-      const extractedText = pdfData.text;
 
-      console.log("🌍 Translating with Hugging Face model...");
-      const modelName = "Xenova/nllb-200-distilled-600M"; // fallback example: English → French
+      if (!pdfData.text || pdfData.text.trim().length === 0) {
+        return void res.status(400).json({ error: "No text found in PDF" });
+      }
 
-      const translator = await pipeline("translation", modelName);
-      const result = await translator(
-        extractedText,
-        {
-          src_lang: "eng_Latn",
-          tgt_lang: lang === "yo" ? "yor_Latn" : "fra_Latn", // Yoruba or French
-        } as any // Cast to any to bypass type error
-      );
+      // ✂️ Split text into pages and paragraphs
+      console.log("🧩 Splitting text into structured pages...");
+      const pages = pdfData.text
+        .split(/\f+/) // page break character (form feed)
+        .map((page) => page.trim())
+        .filter((p) => p.length > 0);
 
-      const translatedText = Array.isArray(result)
-        ? result.map((r: any) => r.translation_text).join(" ")
-        : (result as any).translation_text;
+      const translatedPages: string[] = [];
+
+      for (let i = 0; i < pages.length; i++) {
+        console.log(`🌍 Translating page ${i + 1}/${pages.length}...`);
+
+        const paragraphs = pages[i]
+          .split(/\n\s*\n/)
+          .map((p) => p.trim())
+          .filter((p) => p.length > 0);
+
+        const translatedParagraphs: string[] = [];
+
+        for (const paragraph of paragraphs) {
+          const chunks = chunkText(paragraph, 3000);
+          let translatedParagraph = "";
+
+          for (const chunk of chunks) {
+            const resp = await translationClient.translateText({
+              parent: `projects/${process.env.GOOGLE_PROJECT_ID}/locations/global`,
+              contents: [chunk],
+              mimeType: "text/plain",
+              sourceLanguageCode: "en",
+              targetLanguageCode: lang,
+            });
+
+            const data = Array.isArray(resp) ? resp[0] : (resp as any);
+            if (data?.translations?.[0]?.translatedText) {
+              translatedParagraph += data.translations[0].translatedText + " ";
+            }
+          }
+
+          translatedParagraphs.push(translatedParagraph.trim());
+        }
+
+        translatedPages.push(translatedParagraphs.join("\n\n"));
+      }
+
+      const translatedText = translatedPages.join("\f\n");
 
       // 💾 Cache translation
       translation = await prisma.translationCache.create({
         data: {
           documentId: Number(id),
-          language: String(lang),
+          language: lang,
           translated: translatedText,
         },
       });
     }
 
-    // 3️⃣ Return translated PDF if requested
+    // 🧾 4️⃣ If download requested
     if (download === "true") {
+      console.log("📘 Generating visually structured translated PDF...");
+
       res.setHeader("Content-Type", "application/pdf");
       res.setHeader(
         "Content-Disposition",
         `attachment; filename=translated-${id}-${lang}.pdf`
       );
 
-      const pdfDoc = new PDFDocument();
-
-      // ✅ Register Yoruba-compatible font
+      const pdfDoc = new PDFDocument({ margin: 40, autoFirstPage: false });
       const fontPath = path.join(
         __dirname,
         "../../assets/fonts/static/NotoSans-Regular.ttf"
       );
-      pdfDoc.registerFont("NotoSans", fontPath);
 
-      // 📝 Use the Unicode font
+      if (fs.existsSync(fontPath)) {
+        pdfDoc.registerFont("NotoSans", fontPath);
+        pdfDoc.font("NotoSans");
+      }
+
       pdfDoc.pipe(res);
-      pdfDoc.font("NotoSans").fontSize(12).text(translation.translated, {
-        align: "left",
-      });
+
+      // 🔹 Split translation into pages again  
+      const pages = translation.translated.split(/\f+/);
+
+      for (let i = 0; i < pages.length; i++) {
+        pdfDoc.addPage();
+        const paragraphs = pages[i].split(/\n\s*\n/);
+        pdfDoc.fontSize(12);
+
+        paragraphs.forEach((para) => {
+          pdfDoc.text(para.trim(), {
+            align: "justify",
+            lineGap: 6,
+            paragraphGap: 12,
+          });
+        });
+
+        if (i < pages.length - 1) pdfDoc.addPage();
+      }
+
       pdfDoc.end();
       return;
     }
 
-    // 4️⃣ Return translation as JSON
+    // 5️⃣ JSON Response
     res.status(200).json({
       id: doc.id,
       title: doc.title,
@@ -125,6 +153,29 @@ export const documentTranslation = async (
     res.status(500).json({ error: "Failed to translate document" });
   }
 };
+
+/**
+ * Helper function to chunk long text by sentence
+ */
+function chunkText(text: string, maxLength = 3000): string[] {
+  const sentences = text.split(/(?<=[.?!])\s+/);
+  const chunks: string[] = [];
+  let current = "";
+
+  for (const sentence of sentences) {
+    if ((current + sentence).length > maxLength) {
+      chunks.push(current.trim());
+      current = sentence + " ";
+    } else {
+      current += sentence + " ";
+    }
+  }
+
+  if (current.trim()) chunks.push(current.trim());
+  return chunks;
+}
+
+
 
 export const getTranslations = async (
   req: Request,
