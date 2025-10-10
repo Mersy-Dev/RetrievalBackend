@@ -5,3 +5,4 @@ dist
 generated
 tmp
 credentials
+google-translate-key.json
