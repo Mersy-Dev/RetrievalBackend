@@ -7,9 +7,47 @@ import path from "path";
 import PDFDocument from "pdfkit";
 import fs from "fs";
 import { TranslationServiceClient } from "@google-cloud/translate";
+import { Client, Storage } from "node-appwrite";
 
+// Use a Node.js read stream for uploads instead of importing DOM/File to avoid type mismatches
 const prisma = new PrismaClient();
 const translationClient = new TranslationServiceClient();
+
+// 🔹 Appwrite setup
+const appwrite = new Client()
+  .setEndpoint(process.env.APPWRITE_ENDPOINT as string)
+  .setProject(process.env.APPWRITE_PROJECT_ID as string)
+  .setKey(process.env.APPWRITE_API_KEY as string);
+
+const storage = new Storage(appwrite);
+
+// 🔹 Helper function to upload to Appwrite
+// 🔹 Helper function to upload translated PDF to Appwrite (same pattern as uploadDocument)
+async function uploadTranslatedToAppwrite(filePath: string, fileName: string) {
+  const bucketId = process.env.APPWRITE_BUCKET_ID as string;
+
+  // Read file from disk
+  const fileBuffer = fs.readFileSync(filePath);
+  const stats = fs.statSync(filePath);
+  const fileSizeInMB = stats.size / (1024 * 1024);
+
+  // Create a File object for Appwrite
+  const fileForUpload = new File([fileBuffer], fileName, {
+    type: "application/pdf",
+  });
+
+  // Upload to Appwrite
+  const uploadedFile = await storage.createFile(
+    bucketId,
+    "unique()",
+    fileForUpload
+  );
+
+  // Generate Appwrite view URL
+  const viewUrl = `${process.env.APPWRITE_ENDPOINT}/storage/buckets/${bucketId}/files/${uploadedFile.$id}/view?project=${process.env.APPWRITE_PROJECT_ID}`;
+
+  return { viewUrl, fileId: uploadedFile.$id, fileSizeInMB };
+}
 
 export const documentTranslation = async (req: Request, res: Response) => {
   try {
@@ -21,7 +59,9 @@ export const documentTranslation = async (req: Request, res: Response) => {
     const doc = await prisma.document.findUnique({ where: { id: Number(id) } });
     if (!doc) return void res.status(404).json({ error: "Document not found" });
     if (!doc.signedUrl)
-      return void res.status(400).json({ error: "Document file not available" });
+      return void res
+        .status(400)
+        .json({ error: "Document file not available" });
 
     // 2️⃣ Check cached translation
     let translation = await prisma.translationCache.findFirst({
@@ -30,7 +70,9 @@ export const documentTranslation = async (req: Request, res: Response) => {
 
     if (!translation) {
       console.log("📄 Downloading and reading original PDF...");
-      const response = await axios.get(doc.signedUrl, { responseType: "arraybuffer" });
+      const response = await axios.get(doc.signedUrl, {
+        responseType: "arraybuffer",
+      });
       const pdfBuffer = Buffer.from(response.data, "binary");
 
       const pdfData = await pdfParse(pdfBuffer);
@@ -42,7 +84,7 @@ export const documentTranslation = async (req: Request, res: Response) => {
       // ✂️ Split text into pages and paragraphs
       console.log("🧩 Splitting text into structured pages...");
       const pages = pdfData.text
-        .split(/\f+/) // page break character (form feed)
+        .split(/\f+/)
         .map((page) => page.trim())
         .filter((p) => p.length > 0);
 
@@ -85,47 +127,29 @@ export const documentTranslation = async (req: Request, res: Response) => {
 
       const translatedText = translatedPages.join("\f\n");
 
-      // 💾 Cache translation
-      translation = await prisma.translationCache.create({
-        data: {
-          documentId: Number(id),
-          language: lang,
-          translated: translatedText,
-        },
-      });
-    }
+      // 💾 Create a temp PDF file for Appwrite upload
+      const outputDir = path.join(__dirname, "../../temp");
+      if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir);
 
-    // 🧾 4️⃣ If download requested
-    if (download === "true") {
-      console.log("📘 Generating visually structured translated PDF...");
-
-      res.setHeader("Content-Type", "application/pdf");
-      res.setHeader(
-        "Content-Disposition",
-        `attachment; filename=translated-${id}-${lang}.pdf`
-      );
-
+      const outputPath = path.join(outputDir, `translated-${id}-${lang}.pdf`);
       const pdfDoc = new PDFDocument({ margin: 40, autoFirstPage: false });
+
       const fontPath = path.join(
         __dirname,
         "../../assets/fonts/static/NotoSans-Regular.ttf"
       );
-
       if (fs.existsSync(fontPath)) {
         pdfDoc.registerFont("NotoSans", fontPath);
         pdfDoc.font("NotoSans");
       }
 
-      pdfDoc.pipe(res);
+      pdfDoc.pipe(fs.createWriteStream(outputPath));
 
-      // 🔹 Split translation into pages again  
-      const pages = translation.translated.split(/\f+/);
-
-      for (let i = 0; i < pages.length; i++) {
+      const pagesAgain = translatedText.split(/\f+/);
+      for (let i = 0; i < pagesAgain.length; i++) {
         pdfDoc.addPage();
-        const paragraphs = pages[i].split(/\n\s*\n/);
+        const paragraphs = pagesAgain[i].split(/\n\s*\n/);
         pdfDoc.fontSize(12);
-
         paragraphs.forEach((para) => {
           pdfDoc.text(para.trim(), {
             align: "justify",
@@ -133,12 +157,45 @@ export const documentTranslation = async (req: Request, res: Response) => {
             paragraphGap: 12,
           });
         });
-
-        if (i < pages.length - 1) pdfDoc.addPage();
+        if (i < pagesAgain.length - 1) pdfDoc.addPage();
       }
-
       pdfDoc.end();
-      return;
+
+      // Wait until PDF is finished writing before uploading
+      await new Promise((resolve) => pdfDoc.on("end", resolve));
+
+      // ☁️ Upload to Appwrite
+      console.log("☁️ Uploading translated PDF to Appwrite...");
+      const { viewUrl, fileId, fileSizeInMB } =
+        await uploadTranslatedToAppwrite(
+          outputPath,
+          `translated-${id}-${lang}.pdf`
+        );
+
+      // 💾 Cache translation in DB
+      translation = await prisma.translationCache.create({
+        data: {
+          documentId: Number(id),
+          language: lang,
+          translated: translatedText,
+          fileUrl: viewUrl, // ✅ same as uploadDocument.signedUrl
+          // fileSize: fileSizeInMB, // optional but good to keep consistent
+        },
+      });
+
+      fs.unlinkSync(outputPath); // cleanup local temp file
+    }
+
+    // 🧾 4️⃣ If download requested
+    if (download === "true") {
+      console.log("📘 Downloading translated PDF from Appwrite...");
+
+      // Redirect or stream the Appwrite file
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename=translated-${id}-${lang}.pdf`
+      );
+      return res.redirect(translation.fileUrl || "#");
     }
 
     // 5️⃣ JSON Response
@@ -147,12 +204,15 @@ export const documentTranslation = async (req: Request, res: Response) => {
       title: doc.title,
       language: lang,
       translation: translation.translated,
+      fileUrl: translation.fileUrl,
     });
   } catch (error) {
     console.error("❌ Error translating document:", error);
     res.status(500).json({ error: "Failed to translate document" });
   }
 };
+
+
 
 /**
  * Helper function to chunk long text by sentence
@@ -174,8 +234,6 @@ function chunkText(text: string, maxLength = 3000): string[] {
   if (current.trim()) chunks.push(current.trim());
   return chunks;
 }
-
-
 
 export const getTranslations = async (
   req: Request,

@@ -78,11 +78,12 @@ model Translation {
 }
 
 model TranslationCache {
-  id          Int      @id @default(autoincrement())
-  documentId  Int
-  language    String   // e.g. "yo" for Yoruba
-  translated  String
-  createdAt   DateTime @default(now())
+  id           Int      @id @default(autoincrement())
+  documentId   Int
+  language     String   // e.g. "yo" for Yoruba
+  translated   String?  // optional, still store translated text
+  fileUrl      String?  // Cloudinary/Appwrite signed URL for download
+  createdAt    DateTime @default(now())
 
   document Document @relation(fields: [documentId], references: [id])
 }
