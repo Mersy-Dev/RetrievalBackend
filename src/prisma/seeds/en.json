@@ -10,7 +10,7 @@
     "symptoms": "Symptoms",
     "prevention": "Prevention",
     "treatment": "Treatment",
-    "educationalMaterials": "Educational Materials" 
+    "educationalMaterials": "Educational Materials"
   },
   "home": {
     "hero": {
@@ -119,7 +119,100 @@
       ]
     }
   },
-  "system": {},
+  "system": {
+    "title": "Malaria Intelligence Search",
+    "description": "Retrieve scholarly health info, case insights, and data-driven answers.",
+    "searchPlaceholder": "Search for malaria symptoms, outbreaks, research papers and treatments...",
+    "tags": [
+      "🧬 Malaria Symptoms",
+      "💊 Treatment Guidelines",
+      "🌍 Regional Outbreaks",
+      "📚 Latest Research",
+      "📈 Case Studies",
+      "🛡️ Preventive Measures"
+    ],
+    "ui": {
+      "loadingText": "Loading results...",
+      "errorText": "Failed to fetch documents. Try again.",
+      "noResultsText": "No results found.",
+      "viewMoreButton": "📄 View More"
+    },
+    "styles": {
+      "backgroundLight": "bg-sky-50",
+      "backgroundDark": "dark:bg-gray-900",
+      "textPrimaryLight": "text-sky-700",
+      "textPrimaryDark": "dark:text-sky-400",
+      "borderLight": "border-sky-100",
+      "borderDark": "dark:border-gray-700"
+    },
+   "articles": {
+    "documentNotFound": "Document not found.",
+    "goBackButton": "← Go Back to Search",
+
+    "quickStats": {
+      "title": "Quick Stats",
+      "fields": {
+        "created": "Created",
+        "pages": "Pages",
+        "readingTime": "Reading Time",
+        "fileSize": "File Size"
+      },
+      "noData": "N/A"
+    },
+
+    "description": {
+      "title": "Description",
+      "noDescription": "No description available."
+    },
+
+    "preview": {
+      "title": "Document Preview Center",
+
+      "sections": {
+        "english": {
+          "title": "Original Document (English)",
+          "openButton": "Open",
+          "downloadButton": "Download",
+          "privateText": "📄 This document is private, unavailable, or expired."
+        },
+        "yoruba": {
+          "title": "Translated Document (Yoruba)",
+          "translateButton": "Translate Document",
+          "translatingText": "Translating...",
+          "clickInfo": "Click the button to translate the English document into Yoruba and preview it below.",
+          "openButton": "Open",
+          "downloadButton": "Download"
+        }
+      }
+    },
+
+    "tags": {
+      "title": "Tags"
+    },
+
+    "relatedDocs": {
+      "title": "Related Documents",
+      "noRelated": "No related documents found."
+    },
+
+    "feedbacks": {
+      "title": "Feedbacks",
+      "noFeedbacks": "No feedbacks yet.",
+      "ratingLabel": "Rating",
+      "commentLabel": "Comment",
+      "dateLabel": "Date"
+    },
+
+    "reference": {
+      "title": "Reference",
+      "visitButton": "Visit Reference"
+    },
+
+    "backToSearch": {
+      "button": "← Back to Search"
+    }
+  }
+  },
   "about": {
     "AboutSection": {
       "imageAlt": "Overview of the Malaria Information Retrieval System",
@@ -128,41 +221,41 @@
       "description": "This system is designed to provide users with easy access to malaria-related information in both English and a local language. It enables keyword-based search through a collection of academic, clinical, and public health resources. Built using a bilingual information retrieval model, the platform empowers users—researchers, students, and health workers—to find relevant content efficiently and in their preferred language."
     }
   },
-    "Symptoms": {
-      "title": "Symptoms of Malaria",
-      "intro": "Malaria presents with a variety of symptoms that may appear within 10–15 days of being bitten by an infected mosquito.",
-      "commonSymptoms": "Common Symptoms",
+  "Symptoms": {
+    "title": "Symptoms of Malaria",
+    "intro": "Malaria presents with a variety of symptoms that may appear within 10–15 days of being bitten by an infected mosquito.",
+    "commonSymptoms": "Common Symptoms",
 
-      "feverTitle": "High Fever",
-      "feverDesc": "A sudden rise in body temperature, often recurring in cycles.",
-      "feverDetails": "High fever is the hallmark symptom of malaria. The fever often comes in cycles, accompanied by chills and sweating. It results from the parasite maturing inside red blood cells and causing their rupture.",
+    "feverTitle": "High Fever",
+    "feverDesc": "A sudden rise in body temperature, often recurring in cycles.",
+    "feverDetails": "High fever is the hallmark symptom of malaria. The fever often comes in cycles, accompanied by chills and sweating. It results from the parasite maturing inside red blood cells and causing their rupture.",
 
-      "sweatingTitle": "Excessive Sweating",
-      "sweatingDesc": "Profuse sweating, especially after fever episodes.",
-      "sweatingDetails": "Sweating typically follows the fever and chills stage. This is the body’s attempt to cool itself down and maintain normal temperature after sudden spikes.",
+    "sweatingTitle": "Excessive Sweating",
+    "sweatingDesc": "Profuse sweating, especially after fever episodes.",
+    "sweatingDetails": "Sweating typically follows the fever and chills stage. This is the body’s attempt to cool itself down and maintain normal temperature after sudden spikes.",
 
-      "fatigueTitle": "Severe Fatigue",
-      "fatigueDesc": "Extreme tiredness, weakness, and lack of energy.",
-      "fatigueDetails": "Fatigue results from the destruction of red blood cells and the energy demands of the immune system fighting the infection. Patients often feel drained even with minimal activity.",
+    "fatigueTitle": "Severe Fatigue",
+    "fatigueDesc": "Extreme tiredness, weakness, and lack of energy.",
+    "fatigueDetails": "Fatigue results from the destruction of red blood cells and the energy demands of the immune system fighting the infection. Patients often feel drained even with minimal activity.",
 
-      "chillsTitle": "Chills & Shivering",
-      "chillsDesc": "Sudden cold sensations and shaking chills.",
-      "chillsDetails": "Chills usually appear before fever spikes. They are caused by the parasite bursting out of red blood cells and triggering the body’s inflammatory response.",
+    "chillsTitle": "Chills & Shivering",
+    "chillsDesc": "Sudden cold sensations and shaking chills.",
+    "chillsDetails": "Chills usually appear before fever spikes. They are caused by the parasite bursting out of red blood cells and triggering the body’s inflammatory response.",
 
-      "anemiaTitle": "Anemia",
-      "anemiaDesc": "Paleness, dizziness, and weakness due to loss of red blood cells.",
-      "anemiaDetails": "Anemia in malaria patients is a result of massive destruction of red blood cells by parasites. Severe anemia can lead to complications, especially in children and pregnant women.",
+    "anemiaTitle": "Anemia",
+    "anemiaDesc": "Paleness, dizziness, and weakness due to loss of red blood cells.",
+    "anemiaDetails": "Anemia in malaria patients is a result of massive destruction of red blood cells by parasites. Severe anemia can lead to complications, especially in children and pregnant women.",
 
-      "otherTitle": "Other Symptoms",
-      "otherDesc": "Headache, nausea, vomiting, diarrhea, and muscle pains.",
-      "otherDetails": "Other associated symptoms include abdominal discomfort, loss of appetite, nausea, and muscle aches. Severe cases can involve neurological symptoms such as confusion or seizures.",
+    "otherTitle": "Other Symptoms",
+    "otherDesc": "Headache, nausea, vomiting, diarrhea, and muscle pains.",
+    "otherDetails": "Other associated symptoms include abdominal discomfort, loss of appetite, nausea, and muscle aches. Severe cases can involve neurological symptoms such as confusion or seizures.",
 
-      "detailsTitle": "Detailed Explanation",
-      "details1": "The first signs of malaria are usually fever, headache, and chills. These symptoms may be mild and difficult to recognize as malaria.",
-      "details2": "If not treated within 24 hours, malaria can progress to severe illness and often death. Severe malaria is caused by Plasmodium falciparum and can lead to complications like breathing problems, organ failure, and convulsions.",
-      "details3": "Early diagnosis and treatment are crucial to prevent complications. Always seek medical advice if you experience these symptoms after visiting or living in malaria-prone areas."
-    },
-    "Prevention": {
+    "detailsTitle": "Detailed Explanation",
+    "details1": "The first signs of malaria are usually fever, headache, and chills. These symptoms may be mild and difficult to recognize as malaria.",
+    "details2": "If not treated within 24 hours, malaria can progress to severe illness and often death. Severe malaria is caused by Plasmodium falciparum and can lead to complications like breathing problems, organ failure, and convulsions.",
+    "details3": "Early diagnosis and treatment are crucial to prevent complications. Always seek medical advice if you experience these symptoms after visiting or living in malaria-prone areas."
+  },
+  "Prevention": {
     "title": "Malaria Prevention",
     "intro": "Protecting yourself and your community from malaria involves simple but powerful preventive measures. Explore the recommended strategies below.",
     "netsTitle": "Use Mosquito Nets",
@@ -201,7 +294,7 @@
       "item3": "Monitor symptoms and seek medical help if they worsen"
     }
   },
-   "EducationalMaterials": {
+  "EducationalMaterials": {
     "title": "Educational Materials",
     "intro": "Explore documents, guides, and infographics to learn more about malaria prevention, treatment, and recovery.",
     "searchPlaceholder": "Search materials...",

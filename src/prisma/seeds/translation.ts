@@ -42,7 +42,7 @@ export async function seedTranslations() {
     where: { key_locale: { key, locale: "yo" } },
     update: { value: yoFlat[key] ?? "" }, // empty string if missing
     create: { key, locale: "yo", value: yoFlat[key] ?? "" },
-  });
+  }); 
 }
 
   console.log("✅ Translations seeded successfully");

@@ -12,49 +12,49 @@ const prisma = new PrismaClient();
 // Get a single document by ID
 // Get a single document by ID
 
-  export const getSingleDocument = async (
-    req: Request,
-    res: Response
-  ): Promise<void> => {
-    try {
-      const { id } = req.params;
+export const getSingleDocument = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { id } = req.params;
 
-      // ✅ Fetch document with all related data
-      const document = await prisma.document.findUnique({
-        where: { id: Number(id) },
-        include: {
-          tags: true,
-          relatedDocs: true,
-          relatedByDocuments: true,
-          feedbacks: true,
-        },
-      });
+    // ✅ Fetch document with all related data
+    const document = await prisma.document.findUnique({
+      where: { id: Number(id) },
+      include: {
+        tags: true,
+        relatedDocs: true,
+        relatedByDocuments: true,
+        feedbacks: true,
+      },
+    });
 
-      if (!document) {
-        res.status(404).json({ error: "Document not found" });
-        return;
-      }
-
-      // ✅ Generate Appwrite file view URL (public bucket only)
-      const bucketId = process.env.APPWRITE_BUCKET_ID!;
-      const projectId = process.env.APPWRITE_PROJECT_ID!;
-      const fileId = document.storageUrl; // 👈 make sure you saved Appwrite fileId here
-
-      const endpoint =
-        process.env.APPWRITE_ENDPOINT || "https://fra.cloud.appwrite.io/v1";
-
-      const signedUrl = `${endpoint}/storage/buckets/${bucketId}/files/${fileId}/view?project=${projectId}`;
-
-      // ✅ Return complete document
-      res.status(200).json({
-        ...document,
-        signedUrl,
-      });
-    } catch (error) {
-      console.error("Error fetching document:", error);
-      res.status(500).json({ error: "Failed to fetch document." });
+    if (!document) {
+      res.status(404).json({ error: "Document not found" });
+      return;
     }
-  };
+
+    // ✅ Generate Appwrite file view URL (public bucket only)
+    const bucketId = process.env.APPWRITE_BUCKET_ID!;
+    const projectId = process.env.APPWRITE_PROJECT_ID!;
+    const fileId = document.storageUrl; // 👈 make sure you saved Appwrite fileId here
+
+    const endpoint =
+      process.env.APPWRITE_ENDPOINT || "https://fra.cloud.appwrite.io/v1";
+
+    const signedUrl = `${endpoint}/storage/buckets/${bucketId}/files/${fileId}/view?project=${projectId}`;
+
+    // ✅ Return complete document
+    res.status(200).json({
+      ...document,
+      signedUrl,
+    });
+  } catch (error) {
+    console.error("Error fetching document:", error);
+    res.status(500).json({ error: "Failed to fetch document." });
+  }
+};
 // Get all documents
 export const getAllDocuments = async (
   req: Request,
@@ -119,8 +119,11 @@ export const uploadDocument = async (
   try {
     const {
       title,
+      titleYo,
       description,
+      descriptionYo,
       author,
+      authorYo,
       publishedYear,
       publisher,
       referenceLink,
@@ -231,12 +234,15 @@ export const uploadDocument = async (
     const newDocument = await prisma.document.create({
       data: {
         title,
+        titleYo: titleYo || null,
         description,
+        descriptionYo: descriptionYo || null,
         author,
+        authorYo: authorYo || null,
         publishedYear: publishedYear ? parseInt(publishedYear, 10) : 0,
         publisher: publisher || null,
         referenceLink: referenceLink || null,
-        storageUrl: uploadedFile.$id, // Appwrite file ID
+        storageUrl: uploadedFile.$id,
         signedUrl: viewUrl,
         fileSize: fileSizeInMB,
         pages,
@@ -272,8 +278,11 @@ export const updateDocument = async (
     const { id } = req.params;
     const {
       title,
+      titleYo,
       description,
+      descriptionYo,
       author,
+      authorYo,
       publishedYear,
       publisher,
       referenceLink,
@@ -350,8 +359,11 @@ export const updateDocument = async (
       where: { id: Number(id) },
       data: {
         title: title ?? existingDoc.title,
+        titleYo: titleYo ?? existingDoc.titleYo,
         description: description ?? existingDoc.description,
+        descriptionYo: descriptionYo ?? existingDoc.descriptionYo,
         author: author ?? existingDoc.author,
+        authorYo: authorYo ?? existingDoc.authorYo,
         publishedYear: publishedYear
           ? parseInt(publishedYear, 10)
           : existingDoc.publishedYear,

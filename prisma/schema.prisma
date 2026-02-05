@@ -20,32 +20,36 @@ model Admin {
 
 
 model Document {
-  id            Int         @id @default(autoincrement())
-  title         String
-  description   String?
-  author        String
-  publishedYear Int
-  publisher     String?
-  referenceLink String?
-  storageUrl    String      // Supabase path
-  signedUrl     String?     // temporary access URL
-  pages         Int?        // number of pages
-  readingTime   Int?        // estimated minutes
-  fileSize      Float?      // in MB
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  id              Int         @id @default(autoincrement())
+  title           String
+  titleYo         String?     // Yoruba translation of title
+  description     String?
+  descriptionYo   String?     // Yoruba translation of description
+  author          String
+  authorYo        String?     // Yoruba translation of author
+  publishedYear   Int
+  publisher       String?
+  referenceLink   String?
+  storageUrl      String      // Supabase path
+  signedUrl       String?     // Temporary access URL
+  pages           Int?        // Number of pages
+  readingTime     Int?        // Estimated minutes
+  fileSize        Float?      // In MB
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
 
-
-  tags          Tag[]
-  feedbacks     Feedback[]
+  // Relations
+  tags            Tag[]
+  feedbacks       Feedback[]
 
   // ✅ Proper self-relation for related documents
-  relatedDocs       Document[] @relation("RelatedDocuments")
-  relatedByDocuments Document[] @relation("RelatedDocuments")
+  relatedDocs         Document[] @relation("RelatedDocuments")
+  relatedByDocuments  Document[] @relation("RelatedDocuments")
 
-  translations TranslationCache[]
-
+  // Translations cache (if used for other languages)
+  translations    TranslationCache[]
 }
+
 
 
 model Tag {

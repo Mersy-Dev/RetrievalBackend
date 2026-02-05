@@ -116,6 +116,100 @@
       ]
     }
   },
+  "system": {
+    "title": "Ìwádìí Amúlùúdùn Malaria",
+    "description": "Ṣàwárí ìmọ̀ ìlera tó dá lórí ẹ̀rí, àwùjọ àkànṣe àrùn, àti àwọn ìdáhùn tó dá lórí àkọsílẹ̀ àti ìtúpalẹ̀ data.",
+    "searchPlaceholder": "Ṣàwárí ààmì àrùn malaria, ibi tí àrùn ti ń ṣẹlẹ̀, ìwádìí tuntun àti ìtọ́jú rẹ...",
+    "tags": [
+      "🧬 Ààmì Àrùn Malaria",
+      "💊 Àwọn Ilànà Ìtọ́jú",
+      "🌍 Àrùn tó ń ṣẹlẹ̀ ní Agbègbè",
+      "📚 Ìwádìí Tuntun",
+      "📈 Ìtúpalẹ̀ Ìṣẹ̀lẹ̀ Àrùn Malaria",
+      "🛡️ Ìdènà Àrùn Malaria"
+    ],
+    "ui": {
+      "loadingText": "Ìkópa àwọn àbájáde ń lọ...",
+      "errorText": "Kò ṣèé rí àwọn ìwé àkọsílẹ̀. Jọ̀wọ́ gbìyànjú lẹ́ẹ̀kansi.",
+      "noResultsText": "Kò sí àbájáde kankan.",
+      "viewMoreButton": "📄 Wo Díẹ̀ Síi"
+    },
+    "styles": {
+      "backgroundLight": "bg-sky-50",
+      "backgroundDark": "dark:bg-gray-900",
+      "textPrimaryLight": "text-sky-700",
+      "textPrimaryDark": "dark:text-sky-400",
+      "borderLight": "border-sky-100",
+      "borderDark": "dark:border-gray-700"
+    },
+    "articles": {
+      "documentNotFound": "Àkọọlẹ náà kò rí.",
+      "goBackButton": "← Pada sí Àwárí",
+
+      "quickStats": {
+        "title": "Àwọn Ìṣàkóso Kúkúrú",
+        "fields": {
+          "created": "Ṣẹda",
+          "pages": "Ìwé",
+          "readingTime": "Àkókò Kíkà",
+          "fileSize": "Iwọn Fáìlì"
+        },
+        "noData": "Kò sí"
+      },
+
+      "description": {
+        "title": "Àpejuwe",
+        "noDescription": "Kò sí àpejuwe tó wà."
+      },
+
+      "preview": {
+        "title": "Àárín Ìfihàn Àkọọlẹ",
+
+        "sections": {
+          "english": {
+            "title": "Àkọọlẹ Àtẹ́wọ́n (Gẹ̀ẹ́sì)",
+            "openButton": "Ṣí",
+            "downloadButton": "Gba Látàrí",
+            "privateText": "📄 Àkọọlẹ yìí jẹ́ ìkọ̀kọ, kò sí ní ìtọ́jú, tàbí ti parí."
+          },
+          "yoruba": {
+            "title": "Àkọọlẹ Tó Túmọ̀ Sí Èdè Yorùbá",
+            "translateButton": "Túmọ̀ Àkọọlẹ",
+            "translatingText": "Ìtúmọ̀ ń lọ...",
+            "clickInfo": "Tẹ bọtìnì láti túmọ̀ àkọọlẹ Gẹ̀ẹ́sì sí Yorùbá kí o sì wo àwòrán rẹ ní isalẹ.",
+            "openButton": "Ṣí",
+            "downloadButton": "Gba Látàrí"
+          }
+        }
+      },
+
+      "tags": {
+        "title": "Àwọn Àkọlé"
+      },
+
+      "relatedDocs": {
+        "title": "Àwọn Àkọọlẹ Tó Jọra",
+        "noRelated": "Kò sí àkọọlẹ tó jọra."
+      },
+
+      "feedbacks": {
+        "title": "Àwọn Ìdáhùn",
+        "noFeedbacks": "Kò sí ìdáhùn kankan sibẹ̀.",
+        "ratingLabel": "Ìyẹ̀wò",
+        "commentLabel": "Àlàyé",
+        "dateLabel": "Ọjọ́"
+      },
+
+      "reference": {
+        "title": "Ìtọ́kasí",
+        "visitButton": "Ṣàbẹ̀wò Ìtọ́kasí"
+      },
+
+      "backToSearch": {
+        "button": "← Pada sí Àwárí"
+      }
+    }
+  },
   "about": {
     "AboutSection": {
       "imageAlt": "Àkópọ̀ ìtàn nípa Eto Àwárí Alaye Maleria",
