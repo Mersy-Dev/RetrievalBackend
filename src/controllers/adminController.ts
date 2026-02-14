@@ -5,6 +5,7 @@ import { PrismaClient } from "../generated/client";
 import { sendEmail } from "../utils/mailer";
 
 const prisma = new PrismaClient();
+const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3000";
 
 // Generate Access Token
 const generateAccessToken = (adminId: number): string => {
@@ -21,11 +22,12 @@ const generateRefreshToken = (adminId: number): string => {
 // Register Admin
 export const registerAdmin = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   const { name, email, password, confirmPassword } = req.body;
 
   try {
+    // Validation
     if (!name || !email || !password || !confirmPassword) {
       res.status(400).json({ message: "All fields are required" });
       return;
@@ -36,14 +38,28 @@ export const registerAdmin = async (
       return;
     }
 
+    // Password strength validation
+    const passwordRegex =
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    if (!passwordRegex.test(password)) {
+      res.status(400).json({
+        message:
+          "Password must contain at least 8 characters, including uppercase, lowercase, number, and special character",
+      });
+      return;
+    }
+
+    // Check existing admin
     const existingAdmin = await prisma.admin.findUnique({ where: { email } });
     if (existingAdmin) {
       res.status(400).json({ message: "Admin with this email already exists" });
       return;
     }
 
+    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // Create admin
     const newAdmin = await prisma.admin.create({
       data: {
         name,
@@ -53,13 +69,25 @@ export const registerAdmin = async (
       },
     });
 
+    // Generate tokens
     const verificationToken = jwt.sign(
       { adminId: newAdmin.id },
       process.env.JWT_SECRET!,
-      { expiresIn: "1h" }
+      { expiresIn: "1h" },
     );
 
-    const verificationLink = `http://localhost:3000/verify-email/${verificationToken}`;
+    const accessToken = generateAccessToken(newAdmin.id);
+    const refreshToken = generateRefreshToken(newAdmin.id);
+
+    // Update refresh token in DB
+    await prisma.admin.update({
+      where: { id: newAdmin.id },
+      data: { refreshToken },
+    });
+
+    // Send verification email
+    const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3000";
+    const verificationLink = `${FRONTEND_URL}/verify-email/${verificationToken}`;
 
     await sendEmail(
       email,
@@ -67,28 +95,23 @@ export const registerAdmin = async (
       `<p>Hello ${name},</p>
        <p>Thank you for registering. Please verify your email by clicking the link below:</p>
        <a href="${verificationLink}">${verificationLink}</a>
-       <p>This link will expire in 1 hour.</p>`
+       <p>This link will expire in 1 hour.</p>`,
     );
 
-    const accessToken = generateAccessToken(newAdmin.id);
-    const refreshToken = generateRefreshToken(newAdmin.id);
-
-    await prisma.admin.update({
-      where: { id: newAdmin.id },
-      data: { refreshToken },
-    });
-
+    // Set refresh token cookie
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      secure: process.env.NODE_ENV === "production", // ✅ Good
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "strict", // ✅ Add this
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+      domain:
+        process.env.NODE_ENV === "production" ? ".yourdomain.com" : undefined, // ✅ Add this
     });
 
+    // ✅ FIXED: Don't return refreshToken in response body
     res.status(201).json({
       message: `Welcome, ${name}! 🎉 Your account has been created successfully. Please check your email to verify your account.`,
       accessToken,
-      refreshToken,
       user: filterUserInfo(newAdmin),
     });
   } catch (error) {
@@ -96,11 +119,9 @@ export const registerAdmin = async (
     res.status(500).json({ message: "Server error" });
   }
 };
-
-
 export const verifyEmail = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   const { token } = req.params;
 
@@ -119,7 +140,9 @@ export const verifyEmail = async (
     }
 
     if (admin.isEmailVerified) {
-      res.status(200).json({ message: "Email already verified" });
+      res.status(400).json({
+        message: "Email already verified. You can login directly.",
+      });
       return;
     }
 
@@ -137,7 +160,7 @@ export const verifyEmail = async (
 
 export const loginAdmin = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   const { email, password } = req.body;
 
@@ -164,9 +187,11 @@ export const loginAdmin = async (
 
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      secure: process.env.NODE_ENV === "production", // ✅ Good
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "strict", // ✅ Add this
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+      domain:
+        process.env.NODE_ENV === "production" ? ".yourdomain.com" : undefined, // ✅ Add this
     });
 
     res.status(200).json({
@@ -176,18 +201,27 @@ export const loginAdmin = async (
           : "But we still need you to verify your email. Check your inbox!"
       }`,
       accessToken,
-      refreshToken,
       user: filterUserInfo(admin),
     });
-  } catch (err) {
-    console.error("Login Error:", err);
-    res.status(500).json({ message: "Server error" });
+  } catch (error) {
+    console.error("Register Error:", error);
+
+    // Don't expose internal errors in production
+    const message =
+      process.env.NODE_ENV === "production"
+        ? "Server error"
+        : error instanceof Error
+          ? error.message
+          : "Unknown error";
+
+    res.status(500).json({ message });
   }
 };
+
 // Refresh Token
 export const refreshToken = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   const token = req.cookies.refreshToken;
 
@@ -217,11 +251,13 @@ export const refreshToken = async (
       data: { refreshToken: newRefreshToken },
     });
 
-    res.cookie("refreshToken", newRefreshToken, {
+    res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
+      secure: process.env.NODE_ENV === "production", // ✅ Good
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "strict", // ✅ Add this
       maxAge: 7 * 24 * 60 * 60 * 1000,
+      domain:
+        process.env.NODE_ENV === "production" ? ".yourdomain.com" : undefined, // ✅ Add this
     });
 
     res.status(200).json({ accessToken: newAccessToken });
@@ -234,7 +270,7 @@ export const refreshToken = async (
 // Logout Admin
 export const logoutAdmin = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
     // Clear refresh token from cookie
@@ -257,15 +293,24 @@ export const logoutAdmin = async (
     }
 
     res.status(200).json({ message: "Logout successful" });
-  } catch (err) {
-    console.error("Logout Error:", err);
-    res.status(500).json({ message: "Failed to logout" });
+  } catch (error) {
+    console.error("Register Error:", error);
+
+    // Don't expose internal errors in production
+    const message =
+      process.env.NODE_ENV === "production"
+        ? "Server error"
+        : error instanceof Error
+          ? error.message
+          : "Unknown error";
+
+    res.status(500).json({ message });
   }
 };
 
 export const requestPasswordReset = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   const { email } = req.body;
 
@@ -280,10 +325,10 @@ export const requestPasswordReset = async (
     const resetToken = jwt.sign(
       { adminId: admin.id },
       process.env.JWT_SECRET!,
-      { expiresIn: "15m" }
+      { expiresIn: "15m" },
     );
 
-    const resetLink = `http://localhost:3000/reset-password/${resetToken}`;
+    const resetLink = `${FRONTEND_URL}/reset-password/${resetToken}`;
 
     await sendEmail(
       email,
@@ -291,18 +336,27 @@ export const requestPasswordReset = async (
       `<p>Hello ${admin.name},</p>
    <p>You requested a password reset. Click the link below to reset your password:</p>
    <a href="${resetLink}">${resetLink}</a>
-   <p>This link will expire in 15 minutes.</p>`
+   <p>This link will expire in 15 minutes.</p>`,
     );
     res.status(200).json({ message: "Password reset link sent" });
-  } catch (err) {
-    console.error("Request Reset Error:", err);
-    res.status(500).json({ message: "Server error" });
+  } catch (error) {
+    console.error("Register Error:", error);
+
+    // Don't expose internal errors in production
+    const message =
+      process.env.NODE_ENV === "production"
+        ? "Server error"
+        : error instanceof Error
+          ? error.message
+          : "Unknown error";
+
+    res.status(500).json({ message });
   }
 };
 
 export const resetPassword = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   const { token } = req.params;
   const { newPassword } = req.body;
@@ -311,6 +365,18 @@ export const resetPassword = async (
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as {
       adminId: number;
     };
+
+    // Add after checking if password exists
+    const passwordRegex =
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+
+    if (!newPassword || !passwordRegex.test(newPassword)) {
+      res.status(400).json({
+        message:
+          "Password must contain at least 8 characters, including uppercase, lowercase, number, and special character",
+      });
+      return;
+    }
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
@@ -343,3 +409,31 @@ function filterUserInfo(admin: {
     createdAt: admin.createdAt,
   };
 }
+
+// In adminController.ts
+export const getProfile = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const adminId = req.body.adminId; // Set by verifyAdminToken middleware
+
+    const admin = await prisma.admin.findUnique({
+      where: { id: adminId },
+    });
+
+    if (!admin) {
+      res.status(404).json({ message: "Admin not found" });
+      return;
+    }
+
+    res.status(200).json({
+      user: filterUserInfo(admin),
+    });
+  } catch (error) {
+    console.error("Get Profile Error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+// In routes

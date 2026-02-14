@@ -3,13 +3,13 @@ import cors from "cors";
 import dotenv from "dotenv";
 import morgan from "morgan";
 import fileUpload from "express-fileupload";
-import cookieParser from 'cookie-parser';
+import cookieParser from "cookie-parser";
 
 import documentRoutes from "./routes/documentRoutes";
 import adminRoutes from "./routes/adminRoutes";
-import prisma from './config/database';
-import { FRONTEND_URL } from './config/config';
-import { errorHandler } from './utils/errors';
+import prisma from "./config/database";
+import { FRONTEND_URL } from "./config/config";
+import { errorHandler } from "./utils/errors";
 import translationRoutes from "./routes/translationRoutes";
 
 dotenv.config();
@@ -22,7 +22,9 @@ app.use(
   cors({
     origin: FRONTEND_URL,
     credentials: true,
-  })
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  }),
 );
 app.use(cookieParser());
 app.use(express.json());
@@ -30,7 +32,7 @@ app.use(
   fileUpload({
     useTempFiles: false, // 👈 keeps file in memory
     limits: { fileSize: 50 * 1024 * 1024 }, // max 50MB
-  })
+  }),
 );
 app.use(morgan("dev"));
 
@@ -42,24 +44,19 @@ app.use(morgan("dev"));
 
 // Routes
 app.use("/api/documents", documentRoutes);
-app.use('/api/admin', adminRoutes);
+app.use("/api/admin", adminRoutes);
+
 app.use("/api/translations", translationRoutes);
-
-
 
 // Test route
 app.get("/api/ping", (_req, res) => {
   res.send("pong");
 });
 
-
-
-
 // 404 Handler
 app.use((req, res) => {
-  res.status(404).json({ message: 'Route Not Found' });
+  res.status(404).json({ message: "Route Not Found" });
 });
-
 
 // Global Error Handler
 app.use(errorHandler);
@@ -70,14 +67,14 @@ app.listen(PORT, () => {
 });
 
 // Graceful Shutdown
-process.on('SIGINT', async () => {
+process.on("SIGINT", async () => {
   await prisma.$disconnect();
-  console.log('🔌 Prisma disconnected. Server shutting down.');
+  console.log("🔌 Prisma disconnected. Server shutting down.");
   process.exit(0);
 });
 
-process.on('SIGTERM', async () => {
+process.on("SIGTERM", async () => {
   await prisma.$disconnect();
-  console.log('🔌 Prisma disconnected. Server shutting down.');
+  console.log("🔌 Prisma disconnected. Server shutting down.");
   process.exit(0);
 });

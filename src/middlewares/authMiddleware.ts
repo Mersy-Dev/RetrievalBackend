@@ -1,9 +1,24 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import rateLimit from 'express-rate-limit';
 
 interface JwtPayload {
   adminId: number;
 }
+
+
+
+
+// Create rate limiter for auth routes
+export const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // 5 requests per windowMs
+  message: 'Too many login attempts, please try again after 15 minutes',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+
 
 export const verifyAdminToken = (req: Request, res: Response, next: NextFunction) => {
   const authHeader = req.headers.authorization;
