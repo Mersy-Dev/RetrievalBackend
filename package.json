@@ -4,11 +4,11 @@
   "type": "commonjs",
   "main": "index.js",
   "scripts": {
-    "dev": "nodemon --watch src --watch views --ext ts,ejs,json --exec ts-node src/index.ts",
-    "build": "prisma generate && tsc",
-    "start": "node dist/index.js",
-    "postinstall": "prisma generate"
-  },
+  "dev": "nodemon --watch src --watch views --ext ts,ejs,json --exec ts-node src/index.ts",
+  "build": "prisma generate && tsc",
+  "start": "prisma generate && node dist/index.js",
+  "postinstall": "prisma generate"
+},
   "engines": {
   "node": ">=20.0.0"
 },
