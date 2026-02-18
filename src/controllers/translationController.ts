@@ -1,5 +1,5 @@
 // server/controllers/translationController.ts
-import { PrismaClient } from "../generated/client";
+import { PrismaClient } from '@prisma/client'
 import { Request, Response } from "express";
 import axios from "axios";
 import pdfParse from "pdf-parse";
@@ -252,7 +252,7 @@ export const getTranslations = async (
       select: { key: true, value: true },
     });
 
-    const response = translations.reduce((acc, t) => {
+    const response = translations.reduce((acc: Record<string, string>, t: { key: string; value: string }) => {
       acc[t.key] = t.value;
       return acc;
     }, {} as Record<string, string>);

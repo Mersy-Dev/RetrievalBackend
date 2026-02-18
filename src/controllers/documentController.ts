@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { PrismaClient } from "../generated/client";
+import { PrismaClient } from '@prisma/client'
 import { supabase } from "../utils/supabaseClient"; // 👈 we'll create this
 import fileUpload, { UploadedFile } from "express-fileupload";
 import { v4 as uuidv4 } from "uuid";
