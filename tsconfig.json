@@ -3,7 +3,7 @@
     "target": "ES2020",
     "module": "CommonJS",
     "outDir": "./dist",
-    "rootDir": ".", // Cambia rootDir a la raíz del proyecto para incluir todos los archivos fuente
+    "rootDir": "./src", // Cambia rootDir a la raíz del proyecto para incluir todos los archivos fuente
     "strict": true,
     "esModuleInterop": true,
     "resolveJsonModule": true,
