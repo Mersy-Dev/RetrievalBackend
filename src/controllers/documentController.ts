@@ -436,6 +436,7 @@ export const getTagSuggestions = async (_req: Request, res: Response) => {
     "Latest Research",
     "Case Studies",
     "Preventive Measures",
+    "Malaria in Children",
   ];
 
   res.json(tags);
