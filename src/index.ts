@@ -1,3 +1,4 @@
+import "./env";
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
@@ -11,6 +12,8 @@ import prisma from "./config/database";
 import { FRONTEND_URL } from "./config/config";
 import { errorHandler } from "./utils/errors";
 import translationRoutes from "./routes/translationRoutes";
+
+
 
 dotenv.config();
 

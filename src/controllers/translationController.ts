@@ -1,5 +1,5 @@
 // server/controllers/translationController.ts
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient } from "@prisma/client";
 import { Request, Response } from "express";
 import axios from "axios";
 import pdfParse from "pdf-parse";
@@ -40,7 +40,7 @@ async function uploadTranslatedToAppwrite(filePath: string, fileName: string) {
   const uploadedFile = await storage.createFile(
     bucketId,
     "unique()",
-    fileForUpload
+    fileForUpload,
   );
 
   // Generate Appwrite view URL
@@ -136,7 +136,7 @@ export const documentTranslation = async (req: Request, res: Response) => {
 
       const fontPath = path.join(
         __dirname,
-        "../../assets/fonts/static/NotoSans-Regular.ttf"
+        "../../assets/fonts/static/NotoSans-Regular.ttf",
       );
       if (fs.existsSync(fontPath)) {
         pdfDoc.registerFont("NotoSans", fontPath);
@@ -169,7 +169,7 @@ export const documentTranslation = async (req: Request, res: Response) => {
       const { viewUrl, fileId, fileSizeInMB } =
         await uploadTranslatedToAppwrite(
           outputPath,
-          `translated-${id}-${lang}.pdf`
+          `translated-${id}-${lang}.pdf`,
         );
 
       // 💾 Cache translation in DB
@@ -193,7 +193,7 @@ export const documentTranslation = async (req: Request, res: Response) => {
       // Redirect or stream the Appwrite file
       res.setHeader(
         "Content-Disposition",
-        `attachment; filename=translated-${id}-${lang}.pdf`
+        `attachment; filename=translated-${id}-${lang}.pdf`,
       );
       return res.redirect(translation.fileUrl || "#");
     }
@@ -211,8 +211,6 @@ export const documentTranslation = async (req: Request, res: Response) => {
     res.status(500).json({ error: "Failed to translate document" });
   }
 };
-
-
 
 /**
  * Helper function to chunk long text by sentence
@@ -237,11 +235,10 @@ function chunkText(text: string, maxLength = 3000): string[] {
 
 export const getTranslations = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
-    // Check both path param and query param
-    let lang = req.params.lang || req.query.lang || "en";
+    let lang = req.params.lang || req.params.locale || req.query.lang || "en";
 
     if (Array.isArray(lang)) {
       lang = lang[0];
@@ -252,10 +249,23 @@ export const getTranslations = async (
       select: { key: true, value: true },
     });
 
-    const response = translations.reduce((acc: Record<string, string>, t: { key: string; value: string }) => {
-      acc[t.key] = t.value;
-      return acc;
-    }, {} as Record<string, string>);
+    console.log(
+      `Found ${translations.length} translations for locale: ${lang}`,
+    );
+
+    // Build nested object for next-intl
+    const response: Record<string, any> = {};
+    for (const { key, value } of translations) {
+      const parts = key.split(".");
+      let current = response;
+
+      for (let i = 0; i < parts.length - 1; i++) {
+        if (!current[parts[i]]) current[parts[i]] = {};
+        current = current[parts[i]];
+      }
+
+      current[parts[parts.length - 1]] = value;
+    }
 
     res.status(200).json(response);
   } catch (error) {
@@ -269,7 +279,7 @@ export const getTranslations = async (
  */
 export const createTranslation = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
     const { key, value, locale } = req.body;
@@ -298,7 +308,7 @@ export const createTranslation = async (
  */
 export const updateTranslation = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
     const { key, locale, value } = req.body;
@@ -325,7 +335,7 @@ export const updateTranslation = async (
  */
 export const deleteTranslation = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
     const { key, locale } = req.body; // or req.params if you want

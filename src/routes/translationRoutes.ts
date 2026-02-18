@@ -7,6 +7,7 @@ const router = Router();
 router.get("/document/:id", documentTranslation);
 
 router.get("/:lang", getTranslations);
+router.get("/:locale", getTranslations);
 router.post("/", createTranslation);      // POST /api/translations
 router.put("/:id", updateTranslation);    // PUT /api/translations/:id
 router.delete("/:id", deleteTranslation); // DELETE /api/translations/:id
