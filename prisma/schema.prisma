@@ -15,6 +15,7 @@ model Admin {
   refreshToken    String?
   isEmailVerified Boolean  @default(false)  // ✅ Add this line
   createdAt       DateTime @default(now())
+   @@map("admin")
 }
 
 
@@ -47,6 +48,7 @@ model Document {
 
   // Translations cache (if used for other languages)
   translations    TranslationCache[]
+  @@map("document")
 }
 
 
@@ -55,6 +57,7 @@ model Tag {
   id        Int        @id @default(autoincrement())
   name      String    @unique 
   documents Document[]
+  @@map("tag")
 }
 
 model Feedback {
@@ -66,6 +69,7 @@ model Feedback {
   // relation to Document
   document   Document  @relation(fields: [documentId], references: [id])
   documentId Int
+  @@map("feedback")
 }
 
 
@@ -78,6 +82,7 @@ model Translation {
   updatedAt DateTime @updatedAt
 
   @@unique([key, locale]) // each key-locale pair must be unique
+  @@map("translation")
 }
 
 model TranslationCache {
@@ -89,4 +94,5 @@ model TranslationCache {
   createdAt    DateTime @default(now())
 
   document Document @relation(fields: [documentId], references: [id])
+  @@map("translationcache")
 }
